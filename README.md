@@ -45,3 +45,32 @@ Notes
 - The Next app in `web/` has the React Compiler enabled via `web/next.config.ts`.
 - To use npm workspaces (hoisted install), run `npm install` at the repo root; this will install both the studio and `web/` workspace dependencies.
 - Stop running servers with Ctrl+C, or find and kill the process (e.g., `lsof -iTCP:3333 -sTCP:LISTEN` then `kill <PID>`).
+
+## Repository scripts
+
+From the repo root you can use the following convenience scripts:
+
+- `npm run web:dev` — start the Next.js web app (from `web/`).
+- `npm run studio:dev` — start the Sanity studio (from `sanity-studio/`).
+- `npm run web:build` — build the Next app for production.
+- `npm run studio:build` — build the Sanity studio for deployment.
+
+Example (run both dev servers in separate terminals):
+
+```fish
+npm run studio:dev
+# open a new tab
+npm run web:dev
+```
+
+Root-level install (optional)
+
+If you want npm to hoist and install dependencies for both workspaces in one go, run from the repo root:
+
+```fish
+npm install
+```
+
+This will create a single `node_modules/` at the repository root that serves both projects.
+
+If you'd rather keep separate installs, `cd` into each directory and run `npm install` there.

@@ -27,3 +27,21 @@
 
 # Dotenv and similar local-only files
 *.local
+
+# Environment files
+.env
+.env.*
+
+# Next.js build output
+/.next
+/web/.next
+
+# Vercel
+.vercel
+
+# IDEs and editors
+.vscode/
+.idea/
+
+# macOS
+.DS_Store

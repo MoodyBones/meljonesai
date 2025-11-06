@@ -49,3 +49,33 @@ The output must be provided in a clean Markdown block, ready for input into the 
 | **`cx_design_alignment`**     | 3-4 bullet points detailing my CX/Product strength, linking to a project from Section III. |
 | **`automation_and_tech_fit`** | 3-4 bullet points detailing my AI/Automation skills and Next.js capability.                |
 | **`closing_statement`**       | A single, confident, forward-looking sentence that prompts an interview.                   |
+
+# IV. OUTPUT CONSTRAINTS & SANITY FIELDS
+
+The output must be provided in a clean Markdown block, ready for input into the Sanity CMS.
+
+- **DO NOT** use introductory phrasing (e.g., "Based on the job...").
+- **DO** always frame past work in terms of **business impact** and direct relevance to the target company's job description.
+- **Length:** Target 3-5 punchy bullet points per section.
+
+## SANITY FIELD OUTPUT MAPPING:
+
+| **Sanity Field Name**         | **Content Requirement**                                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------ |
+| **`target_role_title`**       | A highly specific, tailored job title that defines my value for this role.                 |
+| **`custom_introduction`**     | One powerful, 3-sentence opening paragraph that serves as the immediate 'hook'.            |
+| **`cx_design_alignment`**     | 3-4 bullet points detailing my CX/Product strength, linking to a project from Section III. |
+| **`automation_and_tech_fit`** | 3-4 bullet points detailing my AI/Automation skills and Next.js capability.                |
+| **`closing_statement`**       | A single, confident, forward-looking sentence that prompts an interview.                   |
+
+# V. END-OF-DAY KNOWLEDGE ROUTINE (MANDATORY)
+
+At the end of every work session, you MUST create the following three documents, focusing on the high-value problems solved and technical insights gained.
+
+| **Document Path**                                              | **Purpose**                   | **Format/Content Requirement**                                                                                        |
+| -------------------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `src/learning-resources/questions/day_XXX_recall_questions.md` | Spaced Repetition Study Guide | 5-7 short-answer questions (or flashcards) covering the most challenging concepts learned today.                      |
+| `src/learning-resources/posts/day_XXX_linked_post_1.md`        | Technical Deep Dive Summary   | 200-300 word summary of a major technical decision (e.g., Turbopack vs Webpack, why App Router was chosen).           |
+| `src/learning-resources/posts/day_XXX_linked_post_2.md`        | CX/Product Rationale          | 200-300 word summary of a key product or design choice (e.g., why dynamic routing is a better CX than a static page). |
+
+**Use the following initial chat prompt to start this task when the workday is over:** "Using the context from my current work session, generate the content for my three mandatory End-of-Day Knowledge Routine documents as described in Section V of my instructions file. Use the 'day_001' prefix for the filenames."

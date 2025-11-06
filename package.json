@@ -8,12 +8,17 @@
     "web:build": "cd web && npm run build",
     "studio:build": "cd sanity-studio && npm run build"
   },
-  "workspaces": ["web", "sanity-studio"],
+  "workspaces": [
+    "web",
+    "sanity-studio"
+  ],
   "prettier": {
     "semi": false,
     "printWidth": 100,
     "bracketSpacing": false,
     "singleQuote": true
+  },
+  "engines": {
+    "node": ">=18"
   }
-
 }
