@@ -102,4 +102,3 @@ npm run web:dev
 ```
 
 Then open a sample page in your browser (for example: `http://localhost:3000/atlassian-role`). If Sanity is running and contains `jobApplication` documents, the page should render the content instead of the fallback.
-
