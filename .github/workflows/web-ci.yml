@@ -50,6 +50,27 @@ jobs:
       - name: Use Playwright GitHub Action
         uses: microsoft/playwright-github-action@v1
 
+      - name: Verify required secrets
+        env:
+          SANITY_PREVIEW_SECRET: ${{ secrets.SANITY_PREVIEW_SECRET }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          SANITY_WRITE_TOKEN: ${{ secrets.SANITY_WRITE_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          N8N_WEBHOOK_SECRET: ${{ secrets.N8N_WEBHOOK_SECRET }}
+        run: |
+          echo "Checking required repository secrets..."
+          missing=""
+          for v in SANITY_PREVIEW_SECRET NEXT_PUBLIC_SITE_URL SANITY_WRITE_TOKEN ANTHROPIC_API_KEY N8N_WEBHOOK_SECRET; do
+            if [ -z "${!v}" ]; then
+              missing="$missing $v"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "\nERROR: The following required secrets are missing:$missing\n"
+            echo "Please add them in GitHub → Settings → Secrets and variables → Actions. See .github/README_SECRETS.md"
+            exit 1
+          fi
+
       - name: Run Playwright smoke tests
         env:
           SANITY_PREVIEW_SECRET: ${{ secrets.SANITY_PREVIEW_SECRET }}
