@@ -37,7 +37,7 @@ jobs:
               required_status_checks: {
                 strict: true,
                 // Adjust these contexts to match your CI job names if different
-                contexts: ['build', 'lint', 'test']
+                contexts: ['build-and-lint']
               },
               enforce_admins: true,
               required_pull_request_reviews: {
