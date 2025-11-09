@@ -5,7 +5,7 @@ on:
 
 permissions:
   contents: write
-
+  administration: write
 jobs:
   protect:
     runs-on: ubuntu-latest
