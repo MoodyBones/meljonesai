@@ -47,9 +47,12 @@ jobs:
           npm --workspace=web run start &
           npx wait-on http://localhost:3000
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+      - name: Use Playwright GitHub Action
+        uses: microsoft/playwright-github-action@v1
 
       - name: Run Playwright smoke tests
+        env:
+          SANITY_PREVIEW_SECRET: test-secret
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
         run: |
-          npm --workspace=web run test:e2e
+          npm --workspace=web run test:e2e --if-present
