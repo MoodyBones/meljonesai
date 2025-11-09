@@ -94,9 +94,9 @@
 - `COMPLETION_SUMMARY_v2.md` - What was created, how it fits
 
 **🎓 Learning**
-- `src/learning-resources/questions/day_002_recall_questions.md`
-- `src/learning-resources/posts/day_002_linked_post_1.md` (Technical)
-- `src/learning-resources/posts/day_002_linked_post_2.md` (Product)
+- `docs/learning-resources/questions/day_002_recall_questions.md`
+- `docs/learning-resources/posts/day_002_linked_post_1.md` (Technical)
+- `docs/learning-resources/posts/day_002_linked_post_2.md` (Product)
 
 **📋 Navigation**
 - `INDEX.md` - Complete catalog, use case guide
