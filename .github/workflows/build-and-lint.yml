@@ -4,11 +4,11 @@ permissions:
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'web/**'
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'web/**'
 
