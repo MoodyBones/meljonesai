@@ -32,6 +32,7 @@ Current state / next actions (when you're back):
 2. Restart the Next dev server after adding env vars to see real content at pages like `/atlassian-role`.
 3. Optional: improve TypeScript types to match your Sanity schema and add preview mode for live Studio preview.
 
+
 Follow-ups for tomorrow (suggested):
 
 1. Wire Sanity content into the Next homepage (create a minimal GROQ query and render the result).
