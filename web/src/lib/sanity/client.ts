@@ -40,3 +40,28 @@ export async function sanityFetch<T>(
 }
 
 export default getClient
+
+/**
+ * Preview client: uses an API token (not CDN) so drafts can be fetched.
+ * Requires `SANITY_API_READ_TOKEN` to be set in the environment.
+ */
+export function getPreviewClient(): SanityClient | null {
+  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID
+  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET
+  const token = process.env.SANITY_API_READ_TOKEN
+  if (!projectId || !dataset || !token) return null
+  return createSanityClient({
+    projectId,
+    dataset,
+    apiVersion,
+    useCdn: false,
+    token,
+  })
+}
+
+export async function sanityPreviewFetch<T>(query: string, params?: QueryParams): Promise<T | null> {
+  const client = getPreviewClient()
+  if (!client) return null
+  if (params !== undefined) return client.fetch<T>(query, params)
+  return client.fetch<T>(query)
+}
