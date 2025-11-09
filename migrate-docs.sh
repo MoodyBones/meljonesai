@@ -234,9 +234,9 @@ computer:///mnt/user-data/outputs/INDEX.md
 computer:///mnt/user-data/outputs/CHANGES.md
 
 Learning Resources:
-computer:///mnt/user-data/outputs/src/learning-resources/questions/day_002_recall_questions.md
-computer:///mnt/user-data/outputs/src/learning-resources/posts/day_002_linked_post_1.md
-computer:///mnt/user-data/outputs/src/learning-resources/posts/day_002_linked_post_2.md
+computer:///mnt/user-data/outputs/docs/learning-resources/questions/day_002_recall_questions.md
+computer:///mnt/user-data/outputs/docs/learning-resources/posts/day_002_linked_post_1.md
+computer:///mnt/user-data/outputs/docs/learning-resources/posts/day_002_linked_post_2.md
 ```
 
 ## After Downloading
