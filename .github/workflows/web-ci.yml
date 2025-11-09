@@ -63,3 +63,4 @@ jobs:
         with:
           name: playwright-test-results
           path: web/test-results/**
+          retention-days: 7
