@@ -1,0 +1,56 @@
+name: Protect main branch
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  administration: write
+
+jobs:
+  protect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify ADMIN_GITHUB_TOKEN secret exists
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_GITHUB_TOKEN }}
+        run: |
+          if [ -z "${ADMIN_TOKEN}" ]; then
+            echo "ERROR: ADMIN_GITHUB_TOKEN secret is not set. Add a PAT with repo (admin) scope as ADMIN_GITHUB_TOKEN and run this workflow again.";
+            exit 1;
+          fi
+
+      - name: Apply branch protection to main (manual)
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.ADMIN_GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const branch = 'main';
+
+            const protection = {
+              owner,
+              repo,
+              branch,
+              required_status_checks: {
+                strict: true,
+                // Add any required check contexts your CI uses (adjust if needed)
+                contexts: ['web-ci']
+              },
+              enforce_admins: true,
+              required_pull_request_reviews: {
+                dismiss_stale_reviews: true,
+                require_code_owner_reviews: true,
+                required_approving_review_count: 1
+              },
+              restrictions: null,
+              allow_deletions: false,
+              allow_force_pushes: false
+            };
+
+            await github.request('PUT /repos/{owner}/{repo}/branches/{branch}/protection', protection);
+            console.log('Branch protection applied to', `${owner}/${repo}@${branch}`);
+
+      - name: Done
+        run: echo "Branch protection request submitted. If the API call succeeded you should see protection rules on the repository settings -> Branches -> main."
