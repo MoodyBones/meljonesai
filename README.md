@@ -74,3 +74,31 @@ npm install
 This will create a single `node_modules/` at the repository root that serves both projects.
 
 If you'd rather keep separate installs, `cd` into each directory and run `npm install` there.
+
+## Sanity configuration for the Next data layer
+
+The Next app in `web/` is wired to fetch content from the Sanity studio using the public environment variables:
+
+- `NEXT_PUBLIC_SANITY_PROJECT_ID`
+- `NEXT_PUBLIC_SANITY_DATASET`
+
+If these are not set, pages that rely on Sanity will show a friendly fallback message: "Sanity not configured — Set NEXT_PUBLIC_SANITY_PROJECT_ID and NEXT_PUBLIC_SANITY_DATASET to fetch data." (this is expected during initial setup).
+
+To configure locally, create a `.env.local` file in the `web/` folder (or at the repo root) with the following contents:
+
+```text
+NEXT_PUBLIC_SANITY_PROJECT_ID=yourProjectIdHere
+NEXT_PUBLIC_SANITY_DATASET=production
+# optional: NEXT_PUBLIC_SANITY_API_VERSION=v2025-01-01
+```
+
+After adding the env file, restart the Next dev server so it picks up the values:
+
+```fish
+# from repo root
+npm run web:dev
+# or inside web/
+# cd web && npm run dev
+```
+
+Then open a sample page in your browser (for example: `http://localhost:3000/atlassian-role`). If Sanity is running and contains `jobApplication` documents, the page should render the content instead of the fallback.

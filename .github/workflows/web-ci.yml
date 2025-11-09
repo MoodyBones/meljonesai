@@ -1,0 +1,90 @@
+name: Web CI
+
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'package.json'
+
+jobs:
+  build:
+    name: Build and Lint web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json','**/web/package-lock.json','**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint web workspace
+        run: npm --workspace=web run lint
+
+      - name: Typecheck web workspace
+        run: npm --workspace=web run typecheck
+
+      - name: Build web workspace
+        run: npm --workspace=web run build
+
+      - name: Start web server
+        run: |
+          npm --workspace=web run start &
+          npx wait-on http://localhost:3000
+
+      - name: Use Playwright GitHub Action
+        uses: microsoft/playwright-github-action@v1
+
+      - name: Verify required secrets
+        env:
+          SANITY_PREVIEW_SECRET: ${{ secrets.SANITY_PREVIEW_SECRET }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          SANITY_WRITE_TOKEN: ${{ secrets.SANITY_WRITE_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          N8N_WEBHOOK_SECRET: ${{ secrets.N8N_WEBHOOK_SECRET }}
+        run: |
+          echo "Checking required repository secrets..."
+          missing=""
+          for v in SANITY_PREVIEW_SECRET NEXT_PUBLIC_SITE_URL SANITY_WRITE_TOKEN ANTHROPIC_API_KEY N8N_WEBHOOK_SECRET; do
+            if [ -z "${!v}" ]; then
+              missing="$missing $v"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "\nERROR: The following required secrets are missing:$missing\n"
+            echo "Please add them in GitHub → Settings → Secrets and variables → Actions. See .github/README_SECRETS.md"
+            exit 1
+          fi
+
+      - name: Run Playwright smoke tests
+        env:
+          SANITY_PREVIEW_SECRET: ${{ secrets.SANITY_PREVIEW_SECRET }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+        run: |
+          npm --workspace=web run test:e2e --if-present
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: web/test-results/**
+          retention-days: 7

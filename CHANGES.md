@@ -16,6 +16,22 @@ Summary of work completed in this session:
   - Sanity studio running at http://localhost:3333 (confirmed HTTP 200).
 - Removed temporary knowledge-base directory (`src/learning-resources`) when requested, then recreated EOD docs and committed them.
 
+Additional updates from the latest session (Strategy C - Data Layer):
+
+- Implemented a minimal Sanity data layer in the Next app (`web/`):
+  - `web/src/lib/sanity/client.ts` — lazy Sanity client + `sanityFetch` wrapper
+  - `web/src/lib/sanity/queries.ts` — GROQ queries (`APPLICATION_SLUGS_QUERY`, `APPLICATION_BY_SLUG_QUERY`)
+  - `web/src/app/[slug]/page.tsx` — dynamic page and `generateStaticParams()` to SSG per application slug
+- Adjusted code and dependencies so the Next build succeeds when Sanity env vars are not present (the app gracefully shows a "Sanity not configured" message on pages that require data).
+- Verified Next dev server running at http://localhost:3000 and Sanity studio at http://localhost:3333 during the session.
+
+Current state / next actions (when you're back):
+
+1. Configure Sanity environment variables in `web/.env.local` (or root `.env.local`):
+   - `NEXT_PUBLIC_SANITY_PROJECT_ID` and `NEXT_PUBLIC_SANITY_DATASET` are required to fetch real content.
+2. Restart the Next dev server after adding env vars to see real content at pages like `/atlassian-role`.
+3. Optional: improve TypeScript types to match your Sanity schema and add preview mode for live Studio preview.
+
 Follow-ups for tomorrow (suggested):
 
 1. Wire Sanity content into the Next homepage (create a minimal GROQ query and render the result).
