@@ -1,0 +1,119 @@
+{
+  "name": "Job Description → Application",
+  "nodes": [
+    {
+      "id": "1",
+      "type": "n8n-nodes-base.webhook",
+      "name": "Webhook Trigger",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "job-to-application",
+        "options": {}
+      }
+    },
+    {
+      "id": "2",
+      "type": "n8n-nodes-base.function",
+      "name": "Validate Input",
+      "parameters": {
+        "functionCode": "// Validate required fields\nconst { jobDescription, companyName, roleTitle } = $json;\nif (!jobDescription || !companyName || !roleTitle) { throw new Error('Missing required field'); }\nreturn [{ json: { jobDescription, companyName, roleTitle, receivedAt: new Date().toISOString() } }];"
+      }
+    },
+    {
+      "id": "3",
+      "type": "n8n-nodes-base.httpRequest",
+      "name": "Company Research",
+      "parameters": {
+        "url": "={{ $json.companyWebsite || '' }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "4",
+      "type": "n8n-nodes-base.function",
+      "name": "Prepare Gemini Prompt",
+      "parameters": {
+        "functionCode": "const payload = $json;\nconst prompt = `Generate application content for ${payload.companyName} - ${payload.roleTitle}. Job description: ${payload.jobDescription}`;\nreturn [{ json: { prompt } }];"
+      }
+    },
+    {
+      "id": "5",
+      "type": "n8n-nodes-base.httpRequest",
+      "name": "Call LLM",
+      "parameters": {
+        "url": "https://api.example-llm.com/generate",
+        "method": "POST",
+        "options": {}
+      }
+    },
+    {
+      "id": "6",
+      "type": "n8n-nodes-base.function",
+      "name": "Parse AI Response",
+      "parameters": {
+        "functionCode": "// parse response, extract JSON block if present\nconst ai = $json;\n// Implement JSON extraction logic here\nreturn [{ json: { application: ai } }];"
+      }
+    },
+    {
+      "id": "7",
+      "type": "n8n-nodes-base.function",
+      "name": "Generate Slug",
+      "parameters": {
+        "functionCode": "const { companyName, roleTitle } = $json;\nconst slug = (companyName + '-' + roleTitle).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').substring(0,50);\nreturn [{ json: { ...$json, slug } }];"
+      }
+    },
+    {
+      "id": "8",
+      "type": "n8n-nodes-base.function",
+      "name": "Map Project References",
+      "parameters": {
+        "functionCode": "// Map selected projects to Sanity references (placeholder)\nreturn [{ json: { ...$json, linkedProjects: [] } }];"
+      }
+    },
+    {
+      "id": "9",
+      "type": "n8n-nodes-base.httpRequest",
+      "name": "Create Sanity Draft",
+      "parameters": {
+        "url": "https://api.sanity.io/v1/data/mutate/production",
+        "method": "POST",
+        "options": {
+          "headers": {
+            "Authorization": "Bearer {{$secrets.SANITY_WRITE_TOKEN}}",
+            "Content-Type": "application/json"
+          }
+        },
+        "bodyParametersJson": "={{ { mutations: [{ create: { _type: 'jobApplication', slug: { current: $json.slug }, targetCompany: $json.companyName, targetRoleTitle: $json.roleTitle, customIntroduction: $json.application.customIntroduction || '', status: 'ai-generated', linkedProjects: [] } }] } }}"
+      }
+    },
+    {
+      "id": "10",
+      "type": "n8n-nodes-base.function",
+      "name": "Format Response",
+      "parameters": {
+        "functionCode": "return [{ json: { success: true, slug: $json.slug } }];"
+      }
+    },
+    {
+      "id": "11",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "name": "Respond",
+      "parameters": {
+        "responseCode": 200,
+        "responseData": "={{ $json }}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": { "main": [[{"node":"Validate Input","type":"main","index":0}]] },
+    "Validate Input": { "main": [[{"node":"Company Research","type":"main","index":0}]] },
+    "Company Research": { "main": [[{"node":"Prepare Gemini Prompt","type":"main","index":0}]] },
+    "Prepare Gemini Prompt": { "main": [[{"node":"Call LLM","type":"main","index":0}]] },
+    "Call LLM": { "main": [[{"node":"Parse AI Response","type":"main","index":0}]] },
+    "Parse AI Response": { "main": [[{"node":"Generate Slug","type":"main","index":0}]] },
+    "Generate Slug": { "main": [[{"node":"Map Project References","type":"main","index":0}]] },
+    "Map Project References": { "main": [[{"node":"Create Sanity Draft","type":"main","index":0}]] },
+    "Create Sanity Draft": { "main": [[{"node":"Format Response","type":"main","index":0}]] },
+    "Format Response": { "main": [[{"node":"Respond","type":"main","index":0}]] }
+  }
+}
