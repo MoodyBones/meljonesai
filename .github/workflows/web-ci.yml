@@ -39,6 +39,9 @@ jobs:
       - name: Lint web workspace
         run: npm --workspace=web run lint
 
+      - name: Typecheck web workspace
+        run: npm --workspace=web run typecheck
+
       - name: Build web workspace
         run: npm --workspace=web run build
 

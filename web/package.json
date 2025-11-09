@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
