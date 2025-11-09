@@ -24,10 +24,10 @@ if [ ! -f "package.json" ]; then
     exit 1
 fi
 
-echo -e "${BLUE}Step 1: Checking current repository structure...${NC}"
-echo ""
-
-# Check if .github exists
+computer:///mnt/user-data/outputs/docs/learning-resources/questions/day_002_recall_questions.md
+computer:///mnt/user-data/outputs/docs/learning-resources/posts/day_002_linked_post_1.md
+computer:///mnt/user-data/outputs/docs/learning-resources/posts/day_002_linked_post_2.md
+```
 if [ -d ".github" ]; then
     echo -e "${GREEN}✓ Found .github directory${NC}"
     echo "Contents:"
@@ -234,9 +234,15 @@ computer:///mnt/user-data/outputs/INDEX.md
 computer:///mnt/user-data/outputs/CHANGES.md
 
 Learning Resources:
+<<<<<<< HEAD
+computer:///mnt/user-data/outputs/src/learning-resources/questions/day_002_recall_questions.md
+computer:///mnt/user-data/outputs/src/learning-resources/posts/day_002_linked_post_1.md
+computer:///mnt/user-data/outputs/src/learning-resources/posts/day_002_linked_post_2.md
+=======
 computer:///mnt/user-data/outputs/docs/learning-resources/questions/day_002_recall_questions.md
 computer:///mnt/user-data/outputs/docs/learning-resources/posts/day_002_linked_post_1.md
 computer:///mnt/user-data/outputs/docs/learning-resources/posts/day_002_linked_post_2.md
+>>>>>>> 0c5ec3fedc7065114dbcd1d11934becfde3d4ee7
 ```
 
 ## After Downloading
