@@ -52,7 +52,14 @@ jobs:
 
       - name: Run Playwright smoke tests
         env:
-          SANITY_PREVIEW_SECRET: test-secret
-          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          SANITY_PREVIEW_SECRET: ${{ secrets.SANITY_PREVIEW_SECRET }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
         run: |
           npm --workspace=web run test:e2e --if-present
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: web/test-results/**
