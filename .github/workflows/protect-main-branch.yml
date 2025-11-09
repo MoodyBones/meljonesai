@@ -5,7 +5,6 @@ on:
 
 permissions:
   contents: write
-  administration: write
 
 jobs:
   protect:
@@ -33,15 +32,19 @@ jobs:
               owner,
               repo,
               branch,
+              // Align required status checks with the project's Git strategy
+              // (see docs/GIT_STRATEGY.md: require 'build', 'lint', and 'test')
               required_status_checks: {
                 strict: true,
-                // Add any required check contexts your CI uses (adjust if needed)
-                contexts: ['web-ci']
+                // Adjust these contexts to match your CI job names if different
+                contexts: ['build', 'lint', 'test']
               },
               enforce_admins: true,
               required_pull_request_reviews: {
                 dismiss_stale_reviews: true,
-                require_code_owner_reviews: true,
+                // Code-owner reviews are optional per strategy; only enable
+                // if a CODEOWNERS file exists and you want mandatory codeowner reviews
+                require_code_owner_reviews: false,
                 required_approving_review_count: 1
               },
               restrictions: null,
