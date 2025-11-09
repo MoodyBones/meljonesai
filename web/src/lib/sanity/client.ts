@@ -1,5 +1,9 @@
 // Sanity client wrapper
-import {createClient as createSanityClient, type SanityClient, type QueryParams as SanityQueryParams} from '@sanity/client'
+import {
+  createClient as createSanityClient,
+  type SanityClient,
+  type QueryParams as SanityQueryParams,
+} from '@sanity/client'
 
 const apiVersion = 'v2025-01-01'
 
@@ -18,7 +22,10 @@ function getClient(): SanityClient | null {
 // Use a narrow params shape that matches Sanity's fetch params shape.
 export type QueryParams = SanityQueryParams
 
-export async function sanityFetch<T = unknown>(query: string, params?: QueryParams): Promise<T | null> {
+export async function sanityFetch<T>(
+  query: string,
+  params?: QueryParams,
+): Promise<T | null> {
   const client = getClient()
   if (!client) {
     // When Sanity is not configured (e.g. during CI or dev without env), return null so callers can guard.
