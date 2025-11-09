@@ -103,3 +103,25 @@ npm run web:dev
 
 Then open a sample page in your browser (for example: `http://localhost:3000/atlassian-role`). If Sanity is running and contains `jobApplication` documents, the page should render the content instead of the fallback.
 
+
+## 📚 Documentation
+
+**Start here:** [docs/START_HERE.md](docs/START_HERE.md) ⭐
+
+Complete project documentation is in the `docs/` folder:
+
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Fast lookups and daily commands
+- **[Setup Guide](docs/QUICKSTART.md)** - Environment configuration
+- **[Progress Tracking](docs/MILESTONE_SUMMARY.md)** - Daily task checklists
+- **[Copilot Guide](docs/COPILOT_GUIDE_COMPLETE.md)** - AI-assisted development
+- **[Git Strategy](docs/GIT_STRATEGY.md)** - Branching and workflow
+- **[Complete Index](docs/INDEX.md)** - All documentation catalog
+
+### Quick Start
+
+1. Read [docs/START_HERE.md](docs/START_HERE.md) for complete overview
+2. Follow [docs/QUICKSTART.md](docs/QUICKSTART.md) for environment setup
+3. Track progress in [docs/MILESTONE_SUMMARY.md](docs/MILESTONE_SUMMARY.md)
+4. Use [docs/COPILOT_GUIDE_COMPLETE.md](docs/COPILOT_GUIDE_COMPLETE.md) for development
+
+**Documentation Status:** Planning 100% ✅ | Implementation Ready 🎯

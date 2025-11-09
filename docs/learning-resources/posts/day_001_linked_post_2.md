@@ -1,0 +1,7 @@
+# Day 001 — CX/Product rationale: Why split Sanity into `sanity-studio/`
+
+A small change to repository layout created outsized UX and product benefits: moving the Sanity Content Studio into its own `sanity-studio/` directory clarifies the mental model for developers and product stakeholders. The studio is an authoring tool with different lifecycle needs (frequent schema updates, local dev on Vite, separate deploy targets) compared with the Next frontend. By separating them we reduce cognitive overhead when switching contexts and make CI/CD pipelines simpler to reason about — each package can have its own build step, environment variables, and deployment target.
+
+From a user-centred perspective, this separation prevents accidental cross-dependency upgrades (e.g., one project bumping React) from breaking the other. It also helps performance management: the frontend can prioritise Core Web Vitals and frontend bundler tuning, while the studio focuses on fast local editing and plugin stability. For content teams, having an isolated studio reduces risk during deployments and gives a clear upgrade path for the studio independent of the web app.
+
+Operationally, the monorepo/workspaces approach gave us shared tooling and convenience scripts (`npm run web:dev`, `npm run studio:dev`) while keeping node_modules duplication manageable. The net effect is faster onboarding, clearer deploys, and fewer accidental cross-project regressions — all of which improve product delivery speed and reduce engineering cognitive load.
