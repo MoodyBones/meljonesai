@@ -31,9 +31,9 @@
     {
       "id": "4",
       "type": "n8n-nodes-base.function",
-      "name": "Prepare Gemini Prompt",
+      "name": "Prepare Prompt (Structured)",
       "parameters": {
-        "functionCode": "const payload = $json;\nconst prompt = `Generate application content for ${payload.companyName} - ${payload.roleTitle}. Job description: ${payload.jobDescription}`;\nreturn [{ json: { prompt } }];"
+        "functionCode": "const p = $json;\nconst projects = [\n  { id: 'P-01', name: 'Pivot Platform', focus: 'Product Strategy', keyMetric: 'transformed near-zero returns to active re-engagement' },\n  { id: 'P-02', name: 'Future-Proof Foundation', focus: 'Frontend Architecture', keyMetric: 'saved 6+ months development time' },\n  { id: 'P-03', name: 'Ops Autopilot', focus: 'Workflow Automation', keyMetric: 'eliminated manual job matching process' },\n  { id: 'P-04', name: 'Knowledge Transfer Engine', focus: 'Documentation & Onboarding', keyMetric: 'reduced onboarding from weeks to 20 minutes' },\n  { id: 'P-05', name: 'Career Stories Platform', focus: 'AI-assisted development', keyMetric: 'accelerated 0→1 development' }\n];\nconst prompt = `You are an assistant that outputs JSON only.\\nGiven the job description and the candidate's portfolio, produce a JSON object with keys: targetCompany, targetRoleTitle, customIntroduction (3 short sentences), cxDesignAlignment (array of 3 bullets), automationAndTechFit (array of 3 bullets), closingStatement (one sentence), linkedProjectId (choose one of P-01..P-05), keyMetrics (string).\\n\\nJob Description:\\n${p.jobDescription}\\n\\nProjects:\\n${JSON.stringify(projects)}\\n\\nReturn only valid JSON.`;\nreturn [{ json: { prompt } }];"
       }
     },
     {
@@ -41,9 +41,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "name": "Call LLM",
       "parameters": {
-        "url": "https://api.example-llm.com/generate",
+        "url": "={{ $json.endpoint || 'https://api.example-llm.com/generate' }}",
         "method": "POST",
-        "options": {}
+        "options": {},
+        "bodyParametersJson": "={{ { prompt: $json.prompt, max_tokens: 2000 } }}"
       }
     },
     {
@@ -51,7 +52,7 @@
       "type": "n8n-nodes-base.function",
       "name": "Parse AI Response",
       "parameters": {
-        "functionCode": "// parse response, extract JSON block if present\nconst ai = $json;\n// Implement JSON extraction logic here\nreturn [{ json: { application: ai } }];"
+        "functionCode": "const response = $json;\\nlet text = '';\\ntry { text = response.body || response.text || JSON.stringify(response); } catch(e) { text = JSON.stringify(response); }\\nconst jsonMatch = text.match(/```json([\\s\\S]*?)```/i);\\nlet parsed = null;\\nif (jsonMatch) {\\n  try { parsed = JSON.parse(jsonMatch[1]); } catch (e) { parsed = null; }\\n}\\nif (!parsed) {\\n  try { parsed = JSON.parse(text); } catch (e) { parsed = { raw: text }; }\\n}\\nconst application = parsed;\\nreturn [{ json: { application } }];"
       }
     },
     {
@@ -67,7 +68,7 @@
       "type": "n8n-nodes-base.function",
       "name": "Map Project References",
       "parameters": {
-        "functionCode": "// Map selected projects to Sanity references (placeholder)\nreturn [{ json: { ...$json, linkedProjects: [] } }];"
+        "functionCode": "// Map selected projects to Sanity references (placeholder)\nconst linkedId = $json.application && $json.application.linkedProjectId ? $json.application.linkedProjectId : null;\nconst linkedProjects = linkedId ? [{ _type: 'reference', _ref: linkedId }] : [];\nreturn [{ json: { ...$json, linkedProjects } }];"
       }
     },
     {
@@ -83,7 +84,7 @@
             "Content-Type": "application/json"
           }
         },
-        "bodyParametersJson": "={{ { mutations: [{ create: { _type: 'jobApplication', slug: { current: $json.slug }, targetCompany: $json.companyName, targetRoleTitle: $json.roleTitle, customIntroduction: $json.application.customIntroduction || '', status: 'ai-generated', linkedProjects: [] } }] } }}"
+        "bodyParametersJson": "={{ { mutations: [{ create: { _type: 'jobApplication', slug: { current: $json.slug }, targetCompany: $json.companyName, targetRoleTitle: $json.roleTitle, customIntroduction: $json.application && $json.application.customIntroduction ? $json.application.customIntroduction : '', cxDesignAlignment: $json.application && $json.application.cxDesignAlignment ? $json.application.cxDesignAlignment : [], automationAndTechFit: $json.application && $json.application.automationAndTechFit ? $json.application.automationAndTechFit : [], closingStatement: $json.application && $json.application.closingStatement ? $json.application.closingStatement : '', status: 'ai-generated', linkedProjects: $json.linkedProjects } }] } }}"
       }
     },
     {
@@ -105,15 +106,19 @@
     }
   ],
   "connections": {
-    "Webhook Trigger": { "main": [[{"node":"Validate Input","type":"main","index":0}]] },
-    "Validate Input": { "main": [[{"node":"Company Research","type":"main","index":0}]] },
-    "Company Research": { "main": [[{"node":"Prepare Gemini Prompt","type":"main","index":0}]] },
-    "Prepare Gemini Prompt": { "main": [[{"node":"Call LLM","type":"main","index":0}]] },
-    "Call LLM": { "main": [[{"node":"Parse AI Response","type":"main","index":0}]] },
-    "Parse AI Response": { "main": [[{"node":"Generate Slug","type":"main","index":0}]] },
-    "Generate Slug": { "main": [[{"node":"Map Project References","type":"main","index":0}]] },
-    "Map Project References": { "main": [[{"node":"Create Sanity Draft","type":"main","index":0}]] },
-    "Create Sanity Draft": { "main": [[{"node":"Format Response","type":"main","index":0}]] },
-    "Format Response": { "main": [[{"node":"Respond","type":"main","index":0}]] }
+    "Webhook Trigger": {"main": [[{"node": "Validate Input", "type": "main", "index": 0}]]},
+    "Validate Input": {"main": [[{"node": "Company Research", "type": "main", "index": 0}]]},
+    "Company Research": {
+      "main": [[{"node": "Prepare Prompt (Structured)", "type": "main", "index": 0}]]
+    },
+    "Prepare Prompt (Structured)": {"main": [[{"node": "Call LLM", "type": "main", "index": 0}]]},
+    "Call LLM": {"main": [[{"node": "Parse AI Response", "type": "main", "index": 0}]]},
+    "Parse AI Response": {"main": [[{"node": "Generate Slug", "type": "main", "index": 0}]]},
+    "Generate Slug": {"main": [[{"node": "Map Project References", "type": "main", "index": 0}]]},
+    "Map Project References": {
+      "main": [[{"node": "Create Sanity Draft", "type": "main", "index": 0}]]
+    },
+    "Create Sanity Draft": {"main": [[{"node": "Format Response", "type": "main", "index": 0}]]},
+    "Format Response": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
   }
 }

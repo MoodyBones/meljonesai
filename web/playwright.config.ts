@@ -14,5 +14,9 @@ export default defineConfig({
   },
   projects: [{name: 'chromium', use: {...devices['Desktop Chrome']}}],
   outputDir: 'test-results',
-  reporter: [['list'], ['junit', {outputFile: 'test-results/results.xml'}], ['html', {open: 'never', outputFolder: 'test-results/html-report'}]],
+  reporter: [
+    ['list'],
+    ['junit', {outputFile: 'test-results/results.xml'}],
+    ['html', {open: 'never', outputFolder: 'test-results/html-report'}],
+  ],
 })

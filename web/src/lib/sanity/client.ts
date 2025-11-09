@@ -22,10 +22,7 @@ function getClient(): SanityClient | null {
 // Use a narrow params shape that matches Sanity's fetch params shape.
 export type QueryParams = SanityQueryParams
 
-export async function sanityFetch<T>(
-  query: string,
-  params?: QueryParams,
-): Promise<T | null> {
+export async function sanityFetch<T>(query: string, params?: QueryParams): Promise<T | null> {
   const client = getClient()
   if (!client) {
     // When Sanity is not configured (e.g. during CI or dev without env), return null so callers can guard.
@@ -59,7 +56,10 @@ export function getPreviewClient(): SanityClient | null {
   })
 }
 
-export async function sanityPreviewFetch<T>(query: string, params?: QueryParams): Promise<T | null> {
+export async function sanityPreviewFetch<T>(
+  query: string,
+  params?: QueryParams,
+): Promise<T | null> {
   const client = getPreviewClient()
   if (!client) return null
   if (params !== undefined) return client.fetch<T>(query, params)

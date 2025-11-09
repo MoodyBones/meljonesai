@@ -1,21 +1,9 @@
 import React from 'react'
 import {sanityFetch} from '@/lib/sanity/client'
 import {APPLICATION_BY_SLUG_QUERY, APPLICATION_SLUGS_QUERY} from '@/lib/sanity/queries'
+import type {JobApplication} from '@/lib/sanity/types'
 
 type Params = {params: {slug: string}}
-
-type LinkedProject = {
-  name?: string
-  focus?: string
-  keyMetric?: string
-}
-
-type Application = {
-  targetCompany?: string
-  targetRoleTitle?: string
-  customIntroduction?: string
-  linkedProject?: LinkedProject
-}
 
 export async function generateStaticParams() {
   // If Sanity env is not configured, return no slugs so build won't fail.
@@ -40,7 +28,7 @@ export default async function Page(props: Params) {
     )
   }
 
-  const data = await sanityFetch<Record<string, unknown> | null>(APPLICATION_BY_SLUG_QUERY, {slug})
+  const data = await sanityFetch<JobApplication | null>(APPLICATION_BY_SLUG_QUERY, {slug})
 
   if (!data) {
     return (
@@ -51,8 +39,7 @@ export default async function Page(props: Params) {
     )
   }
 
-  const {targetCompany, targetRoleTitle, customIntroduction, linkedProject} =
-    (data as unknown as Application) || {}
+  const {targetCompany, targetRoleTitle, customIntroduction, linkedProject} = data || {}
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">

@@ -12,13 +12,20 @@ export const desk = () =>
   S.list()
     .title('Content')
     .items([
-      S.documentTypeListItem('jobApplication').title('Job Applications').child(
-        (id) =>
+      S.documentTypeListItem('jobApplication')
+        .title('Job Applications')
+        .child((id) =>
           S.document()
             .documentId(id)
             .schemaType('jobApplication')
-            .views([S.view.form(), S.view.iframe().title('Preview').options({url: (doc) => resolveProductionUrl(doc)})])
-      ),
+            .views([
+              S.view.form(),
+              S.view
+                .iframe()
+                .title('Preview')
+                .options({url: (doc) => resolveProductionUrl(doc)}),
+            ]),
+        ),
     ])
 
 export default desk
@@ -36,6 +43,7 @@ export default defineConfig({
 ```
 
 3. Set env vars for preview testing:
+
 - `NEXT_PUBLIC_SITE_URL` e.g. `http://localhost:3000`
 - `SANITY_PREVIEW_SECRET` (must match the one in your Next app)
 

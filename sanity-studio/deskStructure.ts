@@ -13,7 +13,10 @@ export const desk = () =>
             .schemaType('jobApplication')
             .views([
               S.view.form(),
-              S.view.iframe().title('Preview').options({url: (doc) => resolveProductionUrl(doc)}),
+              S.view
+                .iframe()
+                .title('Preview')
+                .options({url: (doc) => resolveProductionUrl(doc)}),
             ]),
         ),
     ])
