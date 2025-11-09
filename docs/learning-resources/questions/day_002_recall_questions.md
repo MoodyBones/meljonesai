@@ -243,21 +243,21 @@ git checkout -b feature/m2-n8n-workflow
 **Answer:**
 ```
 1. day_XXX_recall_questions.md
-   Path: src/learning-resources/questions/
+   Path: docs/learning-resources/questions/
    Purpose: Spaced repetition study guide
    Content: 5-7 short-answer questions covering challenging concepts
    Format: Q&A with explanations
    Review: After 24 hours, 3 days, 7 days
 
 2. day_XXX_linked_post_1.md
-   Path: src/learning-resources/posts/
+   Path: docs/learning-resources/posts/
    Purpose: Technical deep dive summary
    Content: 200-300 words on major technical decision
    Example: "Why we chose Turbopack over Webpack"
    Audience: Future you, other developers
 
 3. day_XXX_linked_post_2.md
-   Path: src/learning-resources/posts/
+   Path: docs/learning-resources/posts/
    Purpose: CX/Product rationale
    Content: 200-300 words on product/design choice
    Example: "Why dynamic routing improves UX"
