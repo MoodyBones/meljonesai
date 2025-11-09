@@ -1,4 +1,6 @@
 name: Build and Lint web
+permissions:
+  contents: read
 
 on:
   pull_request:
