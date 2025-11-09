@@ -5,7 +5,7 @@ on:
 
 permissions:
   contents: write
-
+  administration: write
 jobs:
   protect:
     runs-on: ubuntu-latest
@@ -37,7 +37,7 @@ jobs:
               required_status_checks: {
                 strict: true,
                 // Adjust these contexts to match your CI job names if different
-                contexts: ['build-and-lint']
+                contexts: ['build', 'lint', 'test']
               },
               enforce_admins: true,
               required_pull_request_reviews: {

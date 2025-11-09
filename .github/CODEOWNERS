@@ -1,17 +1,13 @@
 # CODEOWNERS - assign default owners for repository areas
 
 # Global owners
-
-- @MoodyBones
+* @MoodyBones
 
 # Web app owners
-
 /web/ @MoodyBones
 
 # Sanity Studio owners
-
 /sanity-studio/ @MoodyBones
 
 # CI and infra
-
-.github/workflows/ @MoodyBones
+/.github/workflows/ @MoodyBones
