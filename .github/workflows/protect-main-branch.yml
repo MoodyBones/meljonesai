@@ -3,6 +3,11 @@ name: Protect main branch
 on:
   workflow_dispatch: {}
 
+name: Protect main branch
+
+on:
+  workflow_dispatch: {}
+
 permissions:
   contents: write
 
