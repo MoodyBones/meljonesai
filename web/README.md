@@ -34,3 +34,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Session cookie contract (mj_session)
+
+This project uses a server-set httpOnly session cookie named `mj_session` for authenticated admin sessions.
+
+- Name: `mj_session`
+- Scope: Path=/ (entire site)
+- HttpOnly: true (not accessible via client-side JavaScript)
+- Secure: set in production (the server adds `; Secure` when NODE_ENV !== 'development')
+- SameSite: Strict
+- Lifetime: 7 days (created by server via Firebase Admin `createSessionCookie`)
+
+Behavior:
+
+- The client obtains a Firebase ID token after sign-in and POSTs it to `/api/auth/session`.
+- The server verifies the ID token via Firebase Admin SDK and creates the `mj_session` cookie.
+- Server-side route protection (e.g. `web/src/app/admin/layout.tsx`) verifies the session cookie using the Admin SDK.
+- Sign-out should call `DELETE /api/auth/session` which clears the `mj_session` cookie.
+
+Notes:
+
+- For local development the cookie Secure flag is not set so `http://localhost:3000` can be used. In production ensure HTTPS so cookies remain secure.
+- If you need to test the full auth exchange in CI or Playwright, provide a valid ID token as `PLAYWRIGHT_AUTH_ID_TOKEN` in the environment (CI secrets) and the smoke test will exercise the exchange and server-set cookie.
