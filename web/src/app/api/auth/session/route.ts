@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server'
 import type {NextRequest} from 'next/server'
 import {createSessionCookie} from '@/lib/firebase/admin'
+import type {CreateSessionRequest, CreateSessionResponse} from '@/lib/types/auth'
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -15,8 +16,8 @@ function makeCookieHeader(value: string | null, maxAgeSeconds: number) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const idToken: string | undefined = body?.idToken
+    const body = (await req.json()) as CreateSessionRequest
+    const idToken = body?.idToken
 
     if (!idToken) {
       return NextResponse.json({error: 'Missing idToken'}, {status: 400})
@@ -31,11 +32,13 @@ export async function POST(req: NextRequest) {
       'Set-Cookie': makeCookieHeader(sessionCookie, maxAgeSeconds),
     }
 
-    return NextResponse.json({ok: true}, {status: 200, headers})
+    const payload: CreateSessionResponse = {ok: true}
+    return NextResponse.json(payload, {status: 200, headers})
   } catch (err: unknown) {
     console.error('Error creating session cookie', err)
     const message = err instanceof Error ? err.message : String(err)
-    return NextResponse.json({error: message || 'Server error'}, {status: 500})
+    const payload: CreateSessionResponse = {error: message || 'Server error'}
+    return NextResponse.json(payload, {status: 500})
   }
 }
 
