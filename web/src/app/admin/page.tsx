@@ -2,15 +2,18 @@
 
 import React, {useEffect, useState} from 'react'
 import {useRouter} from 'next/navigation'
+import Link from 'next/link'
 import {auth} from '@/lib/firebase/config'
-import {onAuthStateChanged, signOut as firebaseSignOut} from 'firebase/auth'
+import {onAuthStateChanged, signOut as firebaseSignOut, type User} from 'firebase/auth'
+
+type AdminUser = {email?: string | null; name?: string | null}
 
 export default function AdminPage() {
   const router = useRouter()
-  const [user, setUser] = useState<any | null>(null)
+  const [user, setUser] = useState<AdminUser | null>(null)
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
+    const unsub = onAuthStateChanged(auth, (u: User | null) => {
       if (!u) {
         // Not signed in — redirect to login
         router.replace('/login')
@@ -58,9 +61,9 @@ export default function AdminPage() {
         </div>
 
         <div className="mt-6">
-          <a href="/admin/new" className="inline-block bg-blue-600 text-white py-2 px-4 rounded">
+          <Link href="/admin/new" className="inline-block bg-blue-600 text-white py-2 px-4 rounded">
             New Application
-          </a>
+          </Link>
         </div>
       </div>
     </div>
