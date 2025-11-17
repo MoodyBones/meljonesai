@@ -68,6 +68,9 @@ jobs:
 
       - name: Mint Playwright ID token (optional)
         id: mint_token
+        # Only run minting when required Firebase secrets exist; otherwise skip gracefully.
+        if: ${{ secrets.FIREBASE_PRIVATE_KEY != '' && secrets.FIREBASE_CLIENT_EMAIL != '' && secrets.FIREBASE_PROJECT_ID != '' && secrets.NEXT_PUBLIC_FIREBASE_API_KEY != '' }}
+        continue-on-error: true
         env:
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
@@ -75,8 +78,9 @@ jobs:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
         run: |
           # Create a fresh ID token using Firebase Admin + Identity Toolkit REST API
+          set -e
           node web/scripts/ci-create-id-token.mjs > token.txt
-          echo "token=$(cat token.txt)" >> $GITHUB_OUTPUT
+          echo "token=$(cat token.txt)" >> $GITHUB_OUTPUT || true
 
       - name: Use Playwright GitHub Action
         uses: microsoft/playwright-github-action@v1
