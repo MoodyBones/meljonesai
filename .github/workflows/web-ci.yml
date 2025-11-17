@@ -66,6 +66,18 @@ jobs:
           npm --workspace=web run start &
           npx wait-on http://localhost:3000
 
+      - name: Mint Playwright ID token (optional)
+        id: mint_token
+        env:
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+        run: |
+          # Create a fresh ID token using Firebase Admin + Identity Toolkit REST API
+          node web/scripts/ci-create-id-token.mjs > token.txt
+          echo "token=$(cat token.txt)" >> $GITHUB_OUTPUT
+
       - name: Use Playwright GitHub Action
         uses: microsoft/playwright-github-action@v1
 
@@ -94,6 +106,10 @@ jobs:
         env:
           SANITY_PREVIEW_SECRET: ${{ secrets.SANITY_PREVIEW_SECRET }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          PLAYWRIGHT_AUTH_ID_TOKEN: ${{ steps.mint_token.outputs.token }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
           npm --workspace=web run test:e2e --if-present
 
