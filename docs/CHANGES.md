@@ -19,6 +19,7 @@ Completed the comprehensive documentation phase by integrating Git branching str
 #### 1. Git Strategy Integration
 
 - **Created GIT_STRATEGY.md** (15KB)
+
   - Complete Git workflow for solo development
   - Branch structure and naming conventions
   - Commit message standards with examples
@@ -29,6 +30,7 @@ Completed the comprehensive documentation phase by integrating Git branching str
   - Quick reference card for fast lookup
 
 - **Updated COPILOT_GUIDE_COMPLETE.md** (43KB)
+
   - Integrated Git workflow into each milestone section
   - Added branch setup commands for each milestone
   - Included commit message examples per task
@@ -66,6 +68,7 @@ Completed the comprehensive documentation phase by integrating Git branching str
 #### 4. EOD Learning Resources
 
 - **Created day_002_recall_questions.md**
+
   - 7 spaced repetition questions
   - Focus on Git workflow concepts
   - Branch strategy understanding
@@ -73,6 +76,7 @@ Completed the comprehensive documentation phase by integrating Git branching str
   - Testing for knowledge retention
 
 - **Created day_002_linked_post_1.md**
+
   - Technical deep dive: Feature-branch workflow
   - Why PRs matter for solo developers
   - Benefits of branch protection
@@ -123,6 +127,7 @@ Learning Resources (new):
 ### Next Steps
 
 #### Immediate (Right Now)
+
 1. Review all documentation one final time
 2. Set up Git repository with `develop` branch
 3. Configure branch protection rules on GitHub
@@ -130,11 +135,143 @@ Learning Resources (new):
 5. Start M1: Firebase Setup
 
 #### This Session (Next 4 hours)
+
 1. Complete M1: Firebase Authentication (1.5 hours)
 2. Complete M2: n8n Workflow (2 hours)
 3. Complete M3: Sanity Schemas (1 hour)
 
+## Session 3: M1 Implementation — Firebase auth & secure session cookie (2025-11-17)
+
+**Duration:** 1.5 hours
+
+**Status:** ✅ Implemented (local verification passed)
+
+### Summary
+
+Implemented Milestone 1 (M1) core authentication plumbing and hardened session handling.
+The work moves Firebase authentication from a client-set, JS-accessible token to a server-set httpOnly session cookie and verifies sessions server-side for /admin routes.
+
+This change closes major security gaps and brings the app closer to production readiness:
+
+- Client: modular Firebase v10 initialization guarded for browser-only execution.
+- Server: Firebase Admin SDK used to verify tokens and create session cookies.
+- Routes: /admin protected by App Router server layout which validates the httpOnly session cookie.
+- Auth flow: login exchanges the ID token for a server-side session cookie; sign-out clears the server cookie.
+
+### Files added / changed
+
+- Added: `web/src/app/api/auth/session/route.ts`
+
+  - POST: accepts `{ idToken }` → calls Firebase Admin `createSessionCookie` → sets `mj_session` httpOnly cookie (1 week).
+  - DELETE: clears `mj_session` cookie.
+
+- Updated: `web/src/lib/firebase/admin.ts`
+
+  - Added `createSessionCookie(idToken, expiresIn)` and `verifySessionCookie(sessionCookie)` helpers.
+
+- Updated: `web/src/app/login/page.tsx`
+
+  - Client obtains ID token via `signInWithPopup` then POSTs token to `/api/auth/session` to create server cookie.
+  - Now redirects on presence of `mj_session` cookie.
+
+- Updated: `web/src/app/admin/layout.tsx`
+
+  - Reads `mj_session` from server cookies and verifies it with `verifySessionCookie`; redirects to `/login` when invalid/missing.
+
+- Updated: `web/src/app/admin/page.tsx`
+  - Sign-out calls `DELETE /api/auth/session` then `firebase.signOut()`; clears legacy client tokens if present.
+
+### Why these changes (rationale)
+
+- Security: Storing auth tokens in JavaScript-accessible cookies (or localStorage) exposes them to XSS and other client-side attacks. A server-side httpOnly cookie prevents JavaScript access and reduces token leakage risk.
+- Verification: Server-side verification of session cookies ensures route protection does not rely on client assertions — this prevents unauthorized access to `/admin/*` routes.
+- Separation of concerns: The client performs only sign-in and hands an ID token to the server; the server owns session creation and lifecycle.
+
+### Tests & verification performed locally
+
+- TypeScript: `npm --workspace=web run typecheck` — passed.
+- Build: `next build` — passed after fixes.
+- Dev server: Started `npm run web:dev` and exercised `/login` and `/admin` routes; observed redirects and rendered pages.
+- Functional check: Performed login flow (dev environment) which obtains an ID token, POSTs to `/api/auth/session`, and resulted in an `mj_session` cookie being set (httpOnly). Sign-out cleared the cookie via DELETE.
+
+Notes about local testing:
+
+- The `Secure` cookie flag is added only when NODE_ENV !== 'development' to allow local http testing. In production the cookie will be Secure by default.
+- Google OAuth requires localhost and production origin to be whitelisted in Firebase Console for full end-to-end OAuth flows.
+
+### Known caveats / edge cases
+
+- Legacy `mj_token`: some code earlier set `mj_token` client-side. The admin sign-out clears this legacy cookie for compatibility, but remaining references should be identified and removed in follow-ups.
+- Session revocation: `verifySessionCookie` verifies and checks for token revocation; additional monitoring/logging can be added for revoked/failed attempts.
+- Cookie domain/path: currently `Path=/` is used; if you deploy under a subpath or use multiple domains, update cookie options accordingly.
+
+### How to validate locally (quick commands)
+
+1. Ensure `web/.env.local` has NEXT*PUBLIC*\_ and server `FIREBASE\__` values (private key must use escaped \n sequences).
+2. Start dev server:
+
+```fish
+cd /Users/melmini/Work/meljonesai
+npm run web:dev
+```
+
+3. Open http://localhost:3000/login, sign in with Google (ensure localhost is in Firebase OAuth authorized domains), and confirm:
+
+- After sign-in the server sets `mj_session` httpOnly cookie.
+- Visiting /admin renders protected admin pages.
+- Signing out clears `mj_session` and returns to /login.
+
+### Next steps (recommended)
+
+1. CI / smoke tests: Add a Playwright smoke test to verify /login → /admin redirect and cookie handling in CI (requires secrets).
+2. PR: Create `feature/m1-firebase-setup -> develop` with this changelog and the M1 checklist included (I can open the PR if you want).
+3. Replace/remove any remaining `mj_token` references to avoid confusion.
+4. Add server-side logging for failed verifications (audit/security).
+5. Add brief documentation to `web/README.md` and root README describing the session cookie contract (`mj_session`, duration, security notes).
+
+### CI: Playwright configuration note
+
+If you want CI to exercise the full auth exchange (ID token → server session cookie) include a test ID token as a secret and pass it into the Playwright job. Recommended secret names:
+
+- `PLAYWRIGHT_AUTH_ID_TOKEN` — a Firebase ID token (short-lived). If you use this, the Playwright auth smoke test will POST it to `/api/auth/session` and validate server-set `mj_session` cookie flow.
+- `FIREBASE_PRIVATE_KEY`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PROJECT_ID` — required by server-side admin SDK during CI runs.
+
+Example (GitHub Actions) step snippet to set an env secret for the Playwright job:
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: npm ci --workspace=web
+      - name: Run Playwright smoke
+        env:
+          PLAYWRIGHT_AUTH_ID_TOKEN: ${{ secrets.PLAYWRIGHT_AUTH_ID_TOKEN }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: npm --workspace=web run test:e2e
+```
+
+Notes:
+
+- Supplying `PLAYWRIGHT_AUTH_ID_TOKEN` is optional; when absent the Playwright auth smoke test only verifies unauthenticated redirects and UI elements.
+- Using a short-lived ID token in CI is brittle. Prefer creating a CI pre-step that mints a fresh token via admin credentials, or run tests against a Firebase emulator.
+
+### Mapping to M1 checklist (COPILOT guide)
+
+- Task 1.1: Firebase client config — Done (browser-guarded init).
+- Task 1.2: Firebase admin config — Done (admin SDK + private key handling + session helpers).
+- Task 1.3: Auth middleware — Replaced with server-side App Router layout verifying session cookie.
+- Task 1.4: Login page — Updated to exchange ID token for server session cookie.
+- Task 1.5: Admin dashboard — Done, with sign-out calling server endpoint.
+
+If you'd like, I can now open the PR for you with this description as the PR body and add a small `web/README.md` section describing session details.
+
 #### Next Session (Remaining 4 hours)
+
 1. Complete M4: Admin Interface (1.5 hours)
 2. Complete M5: Content Generation (1 hour)
 3. Complete M6: Testing & Deployment (1 hour)
@@ -142,15 +279,15 @@ Learning Resources (new):
 
 ### Milestones Status
 
-| Milestone | Status | Branch | Duration |
-|-----------|--------|--------|----------|
-| M0: Planning | ✅ Complete | N/A | 3h |
-| M1: Firebase | 🔜 Ready | feature/m1-firebase-setup | 1.5h |
-| M2: n8n | ⏳ Waiting | feature/m2-n8n-workflow | 2h |
-| M3: Sanity | ⏳ Waiting | feature/m3-sanity-schemas | 1h |
-| M4: Admin UI | ⏳ Waiting | feature/m4-admin-interface | 1.5h |
-| M5: Content | ⏳ Waiting | feature/m5-content-generation | 1h |
-| M6: Deploy | ⏳ Waiting | feature/m6-testing-deployment | 1h |
+| Milestone    | Status      | Branch                        | Duration |
+| ------------ | ----------- | ----------------------------- | -------- |
+| M0: Planning | ✅ Complete | N/A                           | 3h       |
+| M1: Firebase | 🔜 Ready    | feature/m1-firebase-setup     | 1.5h     |
+| M2: n8n      | ⏳ Waiting  | feature/m2-n8n-workflow       | 2h       |
+| M3: Sanity   | ⏳ Waiting  | feature/m3-sanity-schemas     | 1h       |
+| M4: Admin UI | ⏳ Waiting  | feature/m4-admin-interface    | 1.5h     |
+| M5: Content  | ⏳ Waiting  | feature/m5-content-generation | 1h       |
+| M6: Deploy   | ⏳ Waiting  | feature/m6-testing-deployment | 1h       |
 
 **Overall Progress:** 27% (Planning Complete) → Starting Implementation
 
@@ -187,12 +324,14 @@ Established repository structure, implemented monorepo layout with Next.js and S
 ### Work Completed
 
 #### 1. Repository Setup
+
 - Added MIT LICENSE at repository root
 - Initialized Git repository
 - Created .gitignore for Node.js/Next.js projects
 - Set up npm workspaces configuration
 
 #### 2. Monorepo Structure
+
 - Organized projects into monorepo layout:
   - `web/` contains Next.js app (React Compiler enabled, Turbopack)
   - `sanity-studio/` contains Sanity Content Studio
@@ -201,6 +340,7 @@ Established repository structure, implemented monorepo layout with Next.js and S
 - Validated both dev servers running successfully
 
 #### 3. Next.js Configuration
+
 - Next.js 15 with App Router
 - React Compiler enabled via `next.config.ts`
 - Turbopack for faster development
@@ -208,6 +348,7 @@ Established repository structure, implemented monorepo layout with Next.js and S
 - Dev server at http://localhost:3000
 
 #### 4. Sanity Studio Setup
+
 - Sanity Content Studio configured
 - Dev server at http://localhost:3333
 - Project structure established
@@ -216,6 +357,7 @@ Established repository structure, implemented monorepo layout with Next.js and S
 #### 5. Sanity Data Layer Implementation (Strategy C)
 
 **Files Created:**
+
 ```
 web/src/lib/sanity/
 ├── client.ts (lazy Sanity client + sanityFetch wrapper)
@@ -227,6 +369,7 @@ web/src/app/
 ```
 
 **Features:**
+
 - Lazy Sanity client initialization
 - `sanityFetch` wrapper for data fetching
 - GROQ queries: `APPLICATION_SLUGS_QUERY` and `APPLICATION_BY_SLUG_QUERY`
@@ -237,6 +380,7 @@ web/src/app/
 #### 6. EOD Knowledge Documents
 
 **Created Learning Resources:**
+
 ```
 src/learning-resources/
 ├── questions/
@@ -319,9 +463,10 @@ NEXT_PUBLIC_SANITY_DATASET=production
 
 ## Future Sessions
 
-*This section will be updated as work progresses*
+_This section will be updated as work progresses_
 
 ### Upcoming Work
+
 - M1: Firebase Authentication Setup
 - M2: n8n Workflow Implementation
 - M3: Sanity CMS Schema Definitions
@@ -330,12 +475,15 @@ NEXT_PUBLIC_SANITY_DATASET=production
 - M6: Production Testing & Deployment
 
 ### Known Issues
+
 - None currently
 
 ### Technical Debt
+
 - None currently
 
 ### Dependencies Waiting
+
 - Firebase project setup
 - n8n installation confirmation (DONE)
 - Gemini API key acquisition
@@ -348,6 +496,7 @@ NEXT_PUBLIC_SANITY_DATASET=production
 Each session entry should include:
 
 ### Required Sections
+
 - **Duration:** Time spent
 - **Status:** Complete/In Progress/Blocked
 - **Focus:** Main objectives
@@ -360,6 +509,7 @@ Each session entry should include:
 - **Notes:** Important context
 
 ### Optional Sections
+
 - **Milestones Status:** Progress on milestones
 - **Blockers:** Issues preventing progress
 - **Learnings:** Insights gained
@@ -380,7 +530,7 @@ Each session entry should include:
 
 ---
 
-*This change log is the authoritative record of all project work. Keep it updated!*
+_This change log is the authoritative record of all project work. Keep it updated!_
 
 ---
 
