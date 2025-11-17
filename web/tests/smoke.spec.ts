@@ -12,7 +12,7 @@ test('preview route redirects to slug when secret matches', async ({request}) =>
   // Use the preview secret set in CI or local env
   const secret = process.env.SANITY_PREVIEW_SECRET || 'test-secret'
   const url = `/api/preview?secret=${encodeURIComponent(secret)}&slug=/atlassian-role`
-  const res = await request.get(url, {maxRedirects: 0}).catch((e) => e)
+  const res = await request.get(url, {maxRedirects: 0})
   // Expect a redirect (302 or 307)
   expect(res.status()).toBeGreaterThanOrEqual(300)
   expect(res.status()).toBeLessThan(400)

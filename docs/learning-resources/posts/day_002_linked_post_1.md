@@ -1,4 +1,5 @@
 # Technical Deep Dive: Feature-Branch Workflow for Solo Developers
+
 ## Why Professional Git Practices Matter in One-Person Projects
 
 **Date:** 2025-11-09  
@@ -62,7 +63,7 @@ git push --force origin main
 
 # Must create PR instead
 git checkout -b feature/my-work
-git push origin feature/my-work
+git push origin feature-my-work
 gh pr create --base develop
 ```
 
@@ -91,6 +92,7 @@ git checkout feature/m1-firebase-setup
 ```
 
 Without branches, context switches become destructive. You must either:
+
 - Stash changes (easy to forget and lose)
 - Commit broken code to main (pollutes history)
 - Finish current work before switching (slow, blocks urgent fixes)
@@ -144,10 +146,12 @@ Even as a solo dev, PRs serve critical functions:
 4. **Rollback Point:** Easy to revert an entire PR if needed
 
 **PR Template:**
+
 ```markdown
 ## Milestone 1: Firebase Authentication Setup
 
 ### Tasks Completed
+
 - ✅ Firebase client config
 - ✅ Firebase admin SDK
 - ✅ Auth middleware
@@ -155,12 +159,14 @@ Even as a solo dev, PRs serve critical functions:
 - ✅ Protected routes
 
 ### Testing
+
 - ✅ Google Sign-In flow works
 - ✅ Auth state persists
 - ✅ /admin routes protected
 - ✅ No console errors
 
 ### Next Steps
+
 - Merge to develop
 - Start M2: n8n Workflow
 ```
@@ -172,11 +178,13 @@ This isn't bureaucracy—it's **future you** being grateful for present you's th
 ## The Trade-offs
 
 ### Costs
+
 - **Setup Time:** 30 minutes to configure branch protection and templates
 - **Daily Overhead:** 2-3 extra minutes per feature to create/merge PRs
 - **Discipline Required:** Must resist urge to "just push to main"
 
 ### Benefits
+
 - **Never Lose Work:** Protected branches prevent accidental data loss
 - **Professional Portfolio:** Clean git history impresses employers/clients
 - **Easier Debugging:** Clear commit history makes bug tracking faster
