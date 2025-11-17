@@ -20,6 +20,7 @@ Answer these questions without looking at the documentation. Check your answers 
 **Question:** What is the correct branch name format for Milestone 2 (n8n Workflow), and why is it important to follow this convention?
 
 **Answer:**
+
 ```
 feature/m2-n8n-workflow
 
@@ -40,6 +41,7 @@ Importance:
 **Question:** Write a complete commit message (with subject, body, and footer) for adding Firebase authentication middleware in Milestone 1. Follow the Conventional Commits standard.
 
 **Answer:**
+
 ```
 feat(m1): add Firebase authentication middleware
 
@@ -62,13 +64,6 @@ Tested:
 Dependencies: firebase-admin@^12.0.0
 ```
 
-**Key elements:**
-- Type: `feat` (new feature)
-- Scope: `(m1)` (Milestone 1)
-- Subject: imperative mood, lowercase, <72 chars
-- Body: explains what and why
-- Footer: testing status and dependencies
-
 ---
 
 ### Q3: PR Review Checklist
@@ -76,6 +71,7 @@ Dependencies: firebase-admin@^12.0.0
 **Question:** You're about to create a Pull Request for Milestone 3 (Sanity Schemas). What are the 5 most critical items in the self-review checklist before clicking "Merge"?
 
 **Answer:**
+
 ```
 1. ✅ Code Quality
    - No console.log statements
@@ -104,8 +100,6 @@ Dependencies: firebase-admin@^12.0.0
    - .gitignore properly configured
 ```
 
-**Why it matters:** Self-review prevents common mistakes, maintains code quality, and ensures professional standards even without a team reviewer.
-
 ---
 
 ### Q4: Branch Protection Benefits
@@ -113,6 +107,7 @@ Dependencies: firebase-admin@^12.0.0
 **Question:** What are THREE specific benefits of enabling branch protection on the `main` branch for a solo developer, and what could go wrong without it?
 
 **Answer:**
+
 ```
 Benefits:
 1. Prevents Accidental Force Pushes
@@ -138,8 +133,6 @@ Without protection:
 - Harder to debug issues later
 ```
 
-**Why it matters:** Branch protection is like a safety net - prevents costly mistakes and maintains professional standards.
-
 ---
 
 ### Q5: Git Workflow Phases
@@ -147,6 +140,7 @@ Without protection:
 **Question:** Walk through the complete Git workflow for completing Milestone 1 (Firebase Setup), from starting the feature branch to cleaning up after merge. Include all key commands.
 
 **Answer:**
+
 ```
 Phase 1: Start Milestone
 git checkout develop
@@ -193,8 +187,6 @@ Phase 5: Start Next Milestone
 git checkout -b feature/m2-n8n-workflow
 ```
 
-**Why it matters:** Following this workflow ensures clean git history, enables review, and prevents common git mistakes.
-
 ---
 
 ### Q6: Documentation Structure
@@ -202,6 +194,7 @@ git checkout -b feature/m2-n8n-workflow
 **Question:** The MelJonesAI project has 7 main documentation files. Match each document to its primary purpose and when you would reference it.
 
 **Answer:**
+
 ```
 1. COPILOT_GUIDE_COMPLETE.md (43KB)
    Purpose: Complete reference with all prompts and workflows
@@ -232,8 +225,6 @@ git checkout -b feature/m2-n8n-workflow
    When: Planning sessions, estimating work remaining
 ```
 
-**Why it matters:** Each document serves a specific purpose. Using the right doc at the right time saves time and prevents confusion.
-
 ---
 
 ### Q7: EOD Knowledge Routine
@@ -241,6 +232,7 @@ git checkout -b feature/m2-n8n-workflow
 **Question:** According to the copilot-instructions.md, what are the THREE mandatory documents you must create at the end of each work session, and what is the purpose of each?
 
 **Answer:**
+
 ```
 1. day_XXX_recall_questions.md
    Path: docs/learning-resources/questions/
@@ -262,47 +254,7 @@ git checkout -b feature/m2-n8n-workflow
    Content: 200-300 words on product/design choice
    Example: "Why dynamic routing improves UX"
    Audience: Product managers, stakeholders
-
-These documents enable:
-- Knowledge retention via spaced repetition
-- Documentation of key decisions
-- Onboarding for future team members
-- Portfolio material for case studies
 ```
-
-**Why it matters:** Systematic knowledge capture prevents forgetting important decisions and creates valuable documentation for future reference.
-
----
-
-## Scoring Guide
-
-- **7/7 correct:** Excellent retention! You understand the Git workflow deeply.
-- **5-6 correct:** Good understanding. Review missed questions and try again tomorrow.
-- **3-4 correct:** Basic understanding. Re-read GIT_STRATEGY.md and COPILOT_GUIDE_COMPLETE.md.
-- **0-2 correct:** Needs review. Study all documentation before starting development.
-
----
-
-## Review Schedule
-
-**First Review:** 24 hours (2025-11-10)  
-**Second Review:** 3 days (2025-11-12)  
-**Third Review:** 7 days (2025-11-16)
-
-Mark questions you got wrong and focus on those in future reviews.
-
----
-
-## Additional Study
-
-If you missed questions, review these sections:
-
-- **Q1-2:** GIT_STRATEGY.md - Branch Naming & Commit Standards
-- **Q3:** COPILOT_GUIDE_COMPLETE.md - Testing Checklists
-- **Q4:** GIT_STRATEGY.md - Branch Protection Rules
-- **Q5:** GIT_STRATEGY.md - Workflow by Phase
-- **Q6:** QUICKSTART.md or INDEX.md - Documentation overview
-- **Q7:** copilot-instructions.md - Section V
 
 ---
 
