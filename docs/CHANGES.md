@@ -201,7 +201,7 @@ Notes about local testing:
 
 ### Known caveats / edge cases
 
-- Legacy `mj_token`: some code earlier set `mj_token` client-side. The admin sign-out clears this legacy cookie for compatibility, but remaining references should be identified and removed in follow-ups.
+- Legacy `mj_token`: earlier versions used a client-set `mj_token` cookie. All runtime code references have been updated to use server-set `mj_session`. The admin sign-out previously cleared `mj_token` for compatibility; those legacy-clearing lines were removed. Documentation previously referencing `mj_token` was updated.
 - Session revocation: `verifySessionCookie` verifies and checks for token revocation; additional monitoring/logging can be added for revoked/failed attempts.
 - Cookie domain/path: currently `Path=/` is used; if you deploy under a subpath or use multiple domains, update cookie options accordingly.
 
