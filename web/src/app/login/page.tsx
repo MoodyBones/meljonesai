@@ -11,9 +11,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // If token cookie exists, redirect to /admin
-    const hasToken = document.cookie.split(';').some((c) => c.trim().startsWith('mj_token='))
-    if (hasToken) router.replace('/admin')
+    // If session cookie exists, redirect to /admin
+    const hasSession = document.cookie.split(';').some((c) => c.trim().startsWith('mj_session='))
+    if (hasSession) router.replace('/admin')
   }, [router])
 
   async function handleGoogleSignIn() {
@@ -23,13 +23,23 @@ export default function LoginPage() {
       const credential = await signInWithPopup(auth, googleProvider)
       const token = await credential.user.getIdToken()
 
-      // Set cookie (1 week)
-      document.cookie = `mj_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; Secure; SameSite=Strict`
+      // Exchange ID token for a secure httpOnly session cookie on the server
+      const res = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: token }),
+      })
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}))
+        throw new Error(payload?.error || 'Failed to create session')
+      }
 
       router.push('/admin')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error', err)
-      setError(err?.message || 'Sign-in failed')
+      const message = err instanceof Error ? err.message : String(err)
+      setError(message || 'Sign-in failed')
     } finally {
       setLoading(false)
     }
