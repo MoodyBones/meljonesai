@@ -28,9 +28,12 @@ export default function AdminPage() {
 
   async function handleSignOut() {
     try {
+      // Clear server-side session cookie
+      await fetch('/api/auth/session', { method: 'DELETE' })
       await firebaseSignOut(auth)
-      // clear cookie
-      document.cookie = 'mj_token=; path=/; max-age=0; Secure; SameSite=Strict'
+      // Clear any legacy client-side cookie just in case
+      document.cookie = 'mj_token=; path=/; max-age=0; SameSite=Strict'
+      document.cookie = 'mj_session=; path=/; max-age=0; SameSite=Strict'
       router.push('/login')
     } catch (err) {
       console.error('Sign out error', err)
