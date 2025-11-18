@@ -23,7 +23,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
           cache: 'npm'
 
       - name: Cache npm
@@ -44,44 +44,12 @@ jobs:
         run: npm --workspace=web run typecheck
 
       - name: Build web workspace
-        env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-        run: |
-          # If FIREBASE_PRIVATE_KEY contains literal \n escapes, convert them to real newlines
-          if [ -n "$FIREBASE_PRIVATE_KEY" ]; then
-            export FIREBASE_PRIVATE_KEY="$FIREBASE_PRIVATE_KEY"
-          fi
-          npm --workspace=web run build
+        run: npm --workspace=web run build
 
       - name: Start web server
         run: |
           npm --workspace=web run start &
           npx wait-on http://localhost:3000
-
-      - name: Mint Playwright ID token (optional)
-        id: mint_token
-        # Only run minting when required Firebase secrets exist; otherwise skip gracefully.
-        if: secrets.FIREBASE_PRIVATE_KEY != '' && secrets.FIREBASE_CLIENT_EMAIL != '' && secrets.FIREBASE_PROJECT_ID != '' && secrets.NEXT_PUBLIC_FIREBASE_API_KEY != ''
-        continue-on-error: true
-        env:
-          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-        run: |
-          # Create a fresh ID token using Firebase Admin + Identity Toolkit REST API
-          set -e
-          node web/scripts/ci-create-id-token.mjs > token.txt
-          echo "token=$(cat token.txt)" >> $GITHUB_OUTPUT || true
 
       - name: Use Playwright GitHub Action
         uses: microsoft/playwright-github-action@v1
@@ -118,10 +86,6 @@ jobs:
         env:
           SANITY_PREVIEW_SECRET: ${{ secrets.SANITY_PREVIEW_SECRET }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
-          PLAYWRIGHT_AUTH_ID_TOKEN: ${{ steps.mint_token.outputs.token }}
-          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
           npm --workspace=web run test:e2e --if-present
 
