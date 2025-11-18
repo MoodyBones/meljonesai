@@ -69,7 +69,7 @@ jobs:
       - name: Mint Playwright ID token (optional)
         id: mint_token
         # Only run minting when required Firebase secrets exist; otherwise skip gracefully.
-        if: ${{ secrets.FIREBASE_PRIVATE_KEY != '' && secrets.FIREBASE_CLIENT_EMAIL != '' && secrets.FIREBASE_PROJECT_ID != '' && secrets.NEXT_PUBLIC_FIREBASE_API_KEY != '' }}
+        if: secrets.FIREBASE_PRIVATE_KEY != '' && secrets.FIREBASE_CLIENT_EMAIL != '' && secrets.FIREBASE_PROJECT_ID != '' && secrets.NEXT_PUBLIC_FIREBASE_API_KEY != ''
         continue-on-error: true
         env:
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
