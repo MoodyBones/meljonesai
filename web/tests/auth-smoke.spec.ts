@@ -29,7 +29,7 @@ test.describe('Auth smoke tests', () => {
     test.expect(setCookie).toBeDefined()
 
     // Parse cookie name/value from header
-    const cookieMatch = /(?:^|; )([^=]+)=([^;]+)/.exec(setCookie as string)
+    const cookieMatch = /^([^=]+)=([^;]+)/.exec(setCookie as string)
     test.expect(cookieMatch).toBeTruthy()
     const [, name, value] = cookieMatch as RegExpExecArray
 
