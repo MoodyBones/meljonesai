@@ -21,9 +21,9 @@ export default function LoginPage() {
             router.replace('/admin');
           }
         }
-      } catch (err) {
-        // Optionally handle error (e.g., network issues)
-      }
+      } catch {
+          // Optionally handle error (e.g., network issues)
+        }
     };
     checkSession();
   }, [router]);
@@ -32,7 +32,7 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
     try {
-      const credential = await signInWithPopup(auth, googleProvider)
+  const credential = await signInWithPopup(auth!, googleProvider)
       const token = await credential.user.getIdToken()
 
       // Exchange ID token for a secure httpOnly session cookie on the server

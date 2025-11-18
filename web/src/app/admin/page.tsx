@@ -13,7 +13,7 @@ export default function AdminPage() {
   const [user, setUser] = useState<AdminUser | null>(null)
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u: User | null) => {
+  const unsub = onAuthStateChanged(auth!, (u: User | null) => {
       if (!u) {
         // Not signed in — redirect to login
         router.replace('/login')
@@ -28,11 +28,11 @@ export default function AdminPage() {
 
   async function handleSignOut() {
     try {
-  // Clear server-side session cookie
-  await fetch('/api/auth/session', { method: 'DELETE' })
-  await firebaseSignOut(auth)
-  // Clear session cookie in client (best-effort) and any legacy leftovers
-  document.cookie = 'mj_session=; path=/; max-age=0; SameSite=Strict'
+      // Clear server-side session cookie
+      await fetch('/api/auth/session', { method: 'DELETE' })
+      await firebaseSignOut(auth!)
+      // Clear session cookie in client (best-effort) and any legacy leftovers
+      document.cookie = 'mj_session=; path=/; max-age=0; SameSite=Strict'
       router.push('/login')
     } catch (err) {
       console.error('Sign out error', err)
