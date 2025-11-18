@@ -28,7 +28,7 @@ export default async function Page(props: Params) {
     )
   }
 
-  const data = await sanityFetch<JobApplication | null>(APPLICATION_BY_SLUG_QUERY, {slug})
+  const data = await sanityFetch<JobApplication>(APPLICATION_BY_SLUG_QUERY, {slug})
 
   if (!data) {
     return (
@@ -39,28 +39,33 @@ export default async function Page(props: Params) {
     )
   }
 
-  const {targetCompany, targetRoleTitle, customIntroduction, linkedProject} = data || {}
+  const {targetCompany, targetRoleTitle, customIntroduction, linkedProject} = data
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl bg-white rounded-lg shadow p-8">
         <h2 className="text-sm text-gray-500">Application</h2>
         <h1 className="text-3xl font-bold mt-2">
-          {targetCompany} — {targetRoleTitle}
+          {targetCompany ?? 'Unknown Company'} — {targetRoleTitle ?? 'Unknown Role'}
         </h1>
 
-        <section className="mt-6">
-          <h3 className="text-xl font-semibold">Introduction</h3>
-          <p className="mt-2 text-gray-700">{customIntroduction}</p>
-        </section>
+        {customIntroduction && (
+          <section className="mt-6">
+            <h3 className="text-xl font-semibold">Introduction</h3>
+            <p className="mt-2 text-gray-700">{customIntroduction}</p>
+          </section>
+        )}
 
         {linkedProject && (
           <section className="mt-6 border-t pt-6">
             <h3 className="text-lg font-semibold">Linked project</h3>
             <p className="mt-2">
-              <strong>{linkedProject.name}</strong> — {linkedProject.focus}
+              <strong>{linkedProject.name ?? 'Unnamed Project'}</strong>
+              {linkedProject.focus && ` — ${linkedProject.focus}`}
             </p>
-            <p className="mt-1 text-sm text-gray-600">Key metric: {linkedProject.keyMetric}</p>
+            {linkedProject.keyMetric && (
+              <p className="mt-1 text-sm text-gray-600">Key metric: {linkedProject.keyMetric}</p>
+            )}
           </section>
         )}
       </div>
