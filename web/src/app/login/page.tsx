@@ -11,10 +11,22 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // If session cookie exists, redirect to /admin
-    const hasSession = document.cookie.split(';').some((c) => c.trim().startsWith('mj_session='))
-    if (hasSession) router.replace('/admin')
-  }, [router])
+    // Check session status via server endpoint (works with httpOnly cookies)
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/auth/session', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.authenticated) {
+            router.replace('/admin');
+          }
+        }
+      } catch (err) {
+        // Optionally handle error (e.g., network issues)
+      }
+    };
+    checkSession();
+  }, [router]);
 
   async function handleGoogleSignIn() {
     setLoading(true)
