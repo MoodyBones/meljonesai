@@ -21,9 +21,12 @@ export default function LoginPage() {
             router.replace('/admin');
           }
         }
-      } catch {
-          // Optionally handle error (e.g., network issues)
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Session check failed:', error)
         }
+        // Optionally handle error (e.g., network issues)
+      }
     };
     checkSession();
   }, [router]);
