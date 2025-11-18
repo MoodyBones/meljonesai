@@ -43,7 +43,6 @@ export default function AdminPage() {
     try {
       await fetch('/api/auth/session', { method: 'DELETE' })
       if (auth) await signOut(auth)
-      document.cookie = 'mj_session=; path=/; max-age=0; SameSite=Strict'
       router.push('/login')
     } catch (error) {
       console.error('Sign out error:', error)
