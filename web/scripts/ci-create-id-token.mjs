@@ -29,7 +29,7 @@ if (!apiKey) exitWith('Missing NEXT_PUBLIC_FIREBASE_API_KEY')
 
 async function main() {
   try {
-    const uid = 'playwright-ci-user'
+    const uid = process.env.CI_TEST_USER_UID || 'playwright-ci-user'
     const customToken = await admin.auth().createCustomToken(uid)
 
     const resp = await fetch(
