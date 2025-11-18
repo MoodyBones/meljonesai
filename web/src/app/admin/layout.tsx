@@ -11,7 +11,9 @@ export default async function AdminLayout({children}: {children: React.ReactNode
   try {
     // Verify Firebase session cookie server-side.
     await verifySessionCookie(session)
-  } catch {
+  } catch (error) {
+    // Log failed verification for security monitoring
+    console.error('Session verification failed:', error)
     // If verification fails, redirect to login.
     return redirect('/login')
   }
