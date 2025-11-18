@@ -1,10 +1,14 @@
 import admin from 'firebase-admin'
 
-const privateKey = process.env.FIREBASE_PRIVATE_KEY
-  ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-  : undefined
+function initializeAdminIfNeeded() {
+  if (admin.apps.length > 0) {
+    return admin
+  }
 
-if (!admin.apps.length) {
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    : undefined
+
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
@@ -12,22 +16,26 @@ if (!admin.apps.length) {
       privateKey,
     }),
   })
+
+  return admin
 }
 
-export const adminAuth = admin.auth()
+function getAdminAuth() {
+  return initializeAdminIfNeeded().auth()
+}
 
 export async function verifyIdToken(idToken: string) {
-  return adminAuth.verifyIdToken(idToken)
+  return getAdminAuth().verifyIdToken(idToken)
 }
 
 // Create a session cookie (server-side) from an ID token. ExpiresIn is in milliseconds.
 export async function createSessionCookie(idToken: string, expiresIn: number) {
-  return adminAuth.createSessionCookie(idToken, {expiresIn})
+  return getAdminAuth().createSessionCookie(idToken, {expiresIn})
 }
 
 // Verify a Firebase session cookie. Pass "true" to check if cookie is revoked.
 export async function verifySessionCookie(sessionCookie: string) {
-  return adminAuth.verifySessionCookie(sessionCookie, true)
+  return getAdminAuth().verifySessionCookie(sessionCookie, true)
 }
 
 export default admin
