@@ -41,7 +41,7 @@ test.describe('Auth smoke tests', () => {
         domain: 'localhost',
         path: '/',
         httpOnly: true,
-        secure: process.env.NODE_ENV !== 'development',
+        secure: false,
       },
     ])
 
