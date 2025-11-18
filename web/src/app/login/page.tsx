@@ -34,8 +34,13 @@ export default function LoginPage() {
   async function handleGoogleSignIn() {
     setLoading(true)
     setError(null)
+    if (!auth) {
+      setError('Firebase not initialized');
+      setLoading(false);
+      return;
+    }
     try {
-  const credential = await signInWithPopup(auth!, googleProvider)
+      const credential = await signInWithPopup(auth, googleProvider)
       const token = await credential.user.getIdToken()
 
       // Exchange ID token for a secure httpOnly session cookie on the server
