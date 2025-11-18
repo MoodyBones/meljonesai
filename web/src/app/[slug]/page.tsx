@@ -46,7 +46,10 @@ export default async function Page(props: Params) {
       <div className="mx-auto max-w-3xl bg-white rounded-lg shadow p-8">
         <h2 className="text-sm text-gray-500">Application</h2>
         <h1 className="text-3xl font-bold mt-2">
-          {targetCompany ?? 'Unknown Company'} — {targetRoleTitle ?? 'Unknown Role'}
+          {(targetCompany && targetRoleTitle)
+            ? `${targetCompany} — ${targetRoleTitle}`
+            : <span className="text-red-600">Error: Missing company or role information</span>
+          }
         </h1>
 
         {customIntroduction && (
