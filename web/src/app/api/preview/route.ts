@@ -16,9 +16,10 @@ export async function GET(req: Request) {
 
   // Turn on Next's Draft Mode
   // draftMode's runtime typing can be a promise in some Next versions — await and call enable()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dm: any = await draftMode()
-  dm?.enable?.()
+  const dm = await draftMode()
+  if (typeof dm?.enable === 'function') {
+    dm.enable()
+  }
 
   // Redirect to the requested path (make sure it starts with a slash)
   const redirectTo = slug.startsWith('/') ? slug : `/${slug}`
