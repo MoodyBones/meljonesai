@@ -7,12 +7,16 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const MAX_AGE_SECONDS = Math.floor(ONE_WEEK_MS / 1000)
 
 function makeCookieHeader(value: string | null, maxAgeSeconds: number) {
-  const secureFlag = process.env.NODE_ENV === 'development' ? '' : '; Secure'
-  if (!value) {
-    // Clear cookie
-    return `mj_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict${secureFlag}`
-  }
-  return `mj_session=${value}; Path=/; Max-Age=${maxAgeSeconds}; HttpOnly; SameSite=Strict${secureFlag}`
+  const isProduction = process.env.NODE_ENV !== 'development';
+  const cookieOptions = [
+    `mj_session=${value || ''}`,
+    'Path=/',
+    `Max-Age=${value ? maxAgeSeconds : 0}`,
+    'HttpOnly',
+    'SameSite=Strict',
+    ...(isProduction ? ['Secure'] : []),
+  ];
+  return cookieOptions.join('; ');
 }
 
 export async function POST(req: NextRequest) {
