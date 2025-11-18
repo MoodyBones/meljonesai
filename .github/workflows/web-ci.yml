@@ -26,16 +26,26 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Cache npm
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json','**/web/package-lock.json','**/package.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Rebuild native modules for Linux
+        run: |
+          echo "Rebuilding lightningcss for linux-x64-gnu..."
+          npm rebuild lightningcss --build-from-source
+          echo "Verifying lightningcss native binary..."
+          ls -la node_modules/lightningcss/node/ || echo "Not found in root"
 
       - name: Lint web workspace
         run: npm --workspace=web run lint
@@ -43,37 +53,13 @@ jobs:
       - name: Typecheck web workspace
         run: npm --workspace=web run typecheck
 
-      - name: Install Rust toolchain (stable)
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: "Pre-build: debug & rebuild lightningcss from source (non-fatal)"
-        run: |
-          echo "== Pre-build debug: node and npm versions =="
-          node -v || true
-          npm -v || true
-          echo "== Attempting verbose rebuild of lightningcss (build-from-source) =="
-          # Force build from source so we compile the native Rust artifact on the runner.
-          npm --workspace=web rebuild lightningcss --build-from-source --verbose || true
-          echo "== Dump npm debug logs (if any) =="
-          tail -n +1 /home/runner/.npm/_logs/*-debug-0.log || true
-          echo "== Listing lightningcss native dir (repo root + web workspace) =="
-          ls -la node_modules/lightningcss/node/ || true
-          ls -la web/node_modules/lightningcss/node/ || true
-
       - name: Build web workspace
-        run: |
-          npm --workspace=web run build
+        run: npm --workspace=web run build
 
       - name: Start web server
         run: |
           npm --workspace=web run start &
           npx wait-on http://localhost:3000
-
-      - name: Use Playwright GitHub Action
-        uses: microsoft/playwright-github-action@v1
 
       - name: Verify required secrets
         id: verify_secrets
@@ -91,7 +77,6 @@ jobs:
               missing="$missing $v"
             fi
           done
-          # Trim leading space
           missing="${missing## }"
           echo "missing=$missing" >> $GITHUB_OUTPUT
           if [ -n "$missing" ]; then
