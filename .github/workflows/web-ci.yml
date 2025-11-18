@@ -43,21 +43,20 @@ jobs:
       - name: Typecheck web workspace
         run: npm --workspace=web run typecheck
 
-      - name: Debug lightningcss native binary
+      - name: "Pre-build: debug & rebuild lightningcss (non-fatal)"
         run: |
-          echo "--- Node / npm versions ---"
+          echo "== Pre-build debug: node and npm versions =="
           node -v || true
           npm -v || true
-          echo "--- Show lightningcss node dir (before rebuild) ---"
-          ls -la web/node_modules/lightningcss/node || true
-          echo "--- Attempt verbose rebuild of lightningcss (best-effort, non-fatal) ---"
-          (cd web && npm rebuild lightningcss --verbose) || true
-          echo "--- Show lightningcss node dir (after rebuild) ---"
-          ls -la web/node_modules/lightningcss/node || true
+          echo "== Attempting verbose rebuild of lightningcss (best-effort) =="
+          # Try rebuilding lightningcss in workspace; do not fail the job here.
+          npm --workspace=web rebuild lightningcss --verbose || true
+          echo "== Listing lightningcss native dir (repo root + web workspace) =="
+          ls -la node_modules/lightningcss/node/ || true
+          ls -la web/node_modules/lightningcss/node/ || true
 
       - name: Build web workspace
         run: |
-          # Run the normal build (this will still fail if native binary is missing)
           npm --workspace=web run build
 
       - name: Start web server
