@@ -26,9 +26,6 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install Rust toolchain (stable)
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Cache npm
         uses: actions/cache@v4
         with:
@@ -40,12 +37,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Rebuild native modules for Linux
+      - name: Install lightningcss native module for Linux
         run: |
-          echo "Rebuilding lightningcss for linux-x64-gnu..."
-          npm rebuild lightningcss --build-from-source
-          echo "Verifying lightningcss native binary..."
-          ls -la node_modules/lightningcss/node/ || echo "Not found in root"
+          echo "Installing lightningcss-linux-x64-gnu..."
+          npm install --no-save lightningcss-linux-x64-gnu@1.30.2
+          echo "Verifying optional dependency..."
+          ls -la node_modules/lightningcss-linux-x64-gnu/ || echo "Not found"
+          echo "Checking lightningcss can load native module..."
+          node -e "const css = require('lightningcss'); console.log('lightningcss loaded successfully')"
 
       - name: Lint web workspace
         run: npm --workspace=web run lint
