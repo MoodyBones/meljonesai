@@ -23,7 +23,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Cache npm
@@ -43,12 +43,21 @@ jobs:
       - name: Typecheck web workspace
         run: npm --workspace=web run typecheck
 
+      - name: Debug lightningcss native binary
+        run: |
+          echo "--- Node / npm versions ---"
+          node -v || true
+          npm -v || true
+          echo "--- Show lightningcss node dir (before rebuild) ---"
+          ls -la web/node_modules/lightningcss/node || true
+          echo "--- Attempt verbose rebuild of lightningcss (best-effort, non-fatal) ---"
+          (cd web && npm rebuild lightningcss --verbose) || true
+          echo "--- Show lightningcss node dir (after rebuild) ---"
+          ls -la web/node_modules/lightningcss/node || true
+
       - name: Build web workspace
         run: |
-          # Attempt to rebuild native CSS tooling (lightningcss) in case prebuilt
-          # binary is missing in the runner environment. This is a best-effort
-          # attempt to fix Turbopack/postcss native module load errors.
-          npm --workspace=web rebuild lightningcss || true
+          # Run the normal build (this will still fail if native binary is missing)
           npm --workspace=web run build
 
       - name: Start web server
