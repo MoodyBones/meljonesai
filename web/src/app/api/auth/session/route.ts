@@ -7,7 +7,7 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const MAX_AGE_SECONDS = Math.floor(ONE_WEEK_MS / 1000)
 
 function makeCookieHeader(value: string | null, maxAgeSeconds: number) {
-  const isProduction = process.env.NODE_ENV !== 'development';
+  const isProduction = process.env.NODE_ENV === 'production';
   const cookieOptions = [
     `mj_session=${value || ''}`,
     'Path=/',
