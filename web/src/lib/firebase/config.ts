@@ -21,7 +21,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-export const auth = app ? getAuth(app) : (null as unknown as ReturnType<typeof getAuth>)
+export const auth: ReturnType<typeof getAuth> | null = app ? getAuth(app) : null
 export const googleProvider = new GoogleAuthProvider()
 
 export default app
