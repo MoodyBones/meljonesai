@@ -4,6 +4,7 @@ import {createSessionCookie} from '@/lib/firebase/admin'
 import type {CreateSessionRequest, CreateSessionResponse} from '@/lib/types/auth'
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
+const MAX_AGE_SECONDS = Math.floor(ONE_WEEK_MS / 1000)
 
 function makeCookieHeader(value: string | null, maxAgeSeconds: number) {
   const secureFlag = process.env.NODE_ENV === 'development' ? '' : '; Secure'
@@ -26,10 +27,8 @@ export async function POST(req: NextRequest) {
     // Create a Firebase session cookie (server-side) from the ID token
     const sessionCookie = await createSessionCookie(idToken, ONE_WEEK_MS)
 
-    const maxAgeSeconds = Math.floor(ONE_WEEK_MS / 1000)
-
     const headers = {
-      'Set-Cookie': makeCookieHeader(sessionCookie, maxAgeSeconds),
+      'Set-Cookie': makeCookieHeader(sessionCookie, MAX_AGE_SECONDS),
     }
 
     const payload: CreateSessionResponse = {ok: true}
