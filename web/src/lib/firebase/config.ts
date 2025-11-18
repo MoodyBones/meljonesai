@@ -12,17 +12,19 @@ const firebaseConfig = {
 
 // Only initialize Firebase in the browser. This avoids server-side initialization
 // during Next.js builds where window is undefined and env vars may not be set.
-let app: ReturnType<typeof initializeApp>;
-if (typeof window === 'undefined') {
-  throw new Error('Firebase Auth cannot be initialized on the server. window is undefined.');
-}
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
+let app: ReturnType<typeof initializeApp> | undefined;
+let auth: ReturnType<typeof getAuth> | undefined;
+let googleProvider: GoogleAuthProvider | undefined;
+
+if (typeof window !== 'undefined') {
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+  } else {
+    app = getApp();
+  }
+  auth = getAuth(app);
+  googleProvider = new GoogleAuthProvider();
 }
 
-export const auth: ReturnType<typeof getAuth> = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
-
+export { auth, googleProvider };
 export default app;
