@@ -42,7 +42,7 @@ This project uses a server-set httpOnly session cookie named `mj_session` for au
 - Name: `mj_session`
 - Scope: Path=/ (entire site)
 - HttpOnly: true (not accessible via client-side JavaScript)
-- Secure: set in production (the server adds `; Secure` when NODE_ENV !== 'development')
+- Secure: set in production (the server adds `; Secure` when NODE_ENV === 'production')
 - SameSite: Strict
 - Lifetime: 7 days (created by server via Firebase Admin `createSessionCookie`)
 
