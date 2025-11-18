@@ -43,14 +43,22 @@ jobs:
       - name: Typecheck web workspace
         run: npm --workspace=web run typecheck
 
-      - name: "Pre-build: debug & rebuild lightningcss (non-fatal)"
+      - name: Install Rust toolchain (stable)
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: "Pre-build: debug & rebuild lightningcss from source (non-fatal)"
         run: |
           echo "== Pre-build debug: node and npm versions =="
           node -v || true
           npm -v || true
-          echo "== Attempting verbose rebuild of lightningcss (best-effort) =="
-          # Try rebuilding lightningcss in workspace; do not fail the job here.
-          npm --workspace=web rebuild lightningcss --verbose || true
+          echo "== Attempting verbose rebuild of lightningcss (build-from-source) =="
+          # Force build from source so we compile the native Rust artifact on the runner.
+          npm --workspace=web rebuild lightningcss --build-from-source --verbose || true
+          echo "== Dump npm debug logs (if any) =="
+          tail -n +1 /home/runner/.npm/_logs/*-debug-0.log || true
           echo "== Listing lightningcss native dir (repo root + web workspace) =="
           ls -la node_modules/lightningcss/node/ || true
           ls -la web/node_modules/lightningcss/node/ || true
