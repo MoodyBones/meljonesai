@@ -6,11 +6,13 @@ on:
     paths:
       - 'web/**'
       - 'package.json'
+      - '.github/workflows/web-ci.yml'
   push:
     branches: [main]
     paths:
       - 'web/**'
       - 'package.json'
+      - '.github/workflows/web-ci.yml'
 
 jobs:
   build:
@@ -37,14 +39,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install lightningcss native module for Linux
+      - name: Install native modules for Linux
         run: |
-          echo "Installing lightningcss-linux-x64-gnu..."
-          npm install --no-save lightningcss-linux-x64-gnu@1.30.2
-          echo "Verifying optional dependency..."
-          ls -la node_modules/lightningcss-linux-x64-gnu/ || echo "Not found"
-          echo "Checking lightningcss can load native module..."
-          node -e "const css = require('lightningcss'); console.log('lightningcss loaded successfully')"
+          echo "Installing native binaries for Linux..."
+          npm install --no-save lightningcss-linux-x64-gnu@1.30.2 @tailwindcss/oxide-linux-x64-gnu@4.1.16
+          echo "Verifying native modules..."
+          ls -la node_modules/lightningcss-linux-x64-gnu/ || echo "lightningcss not found"
+          ls -la node_modules/@tailwindcss/oxide-linux-x64-gnu/ || echo "oxide not found"
+          echo "Testing module loading..."
+          node -e "require('lightningcss'); console.log('✓ lightningcss loaded')"
+          node -e "require('@tailwindcss/oxide'); console.log('✓ @tailwindcss/oxide loaded')"
 
       - name: Lint web workspace
         run: npm --workspace=web run lint
