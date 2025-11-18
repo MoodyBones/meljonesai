@@ -44,7 +44,12 @@ jobs:
         run: npm --workspace=web run typecheck
 
       - name: Build web workspace
-        run: npm --workspace=web run build
+        run: |
+          # Attempt to rebuild native CSS tooling (lightningcss) in case prebuilt
+          # binary is missing in the runner environment. This is a best-effort
+          # attempt to fix Turbopack/postcss native module load errors.
+          npm --workspace=web rebuild lightningcss || true
+          npm --workspace=web run build
 
       - name: Start web server
         run: |
