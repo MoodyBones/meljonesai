@@ -13,7 +13,7 @@ export default function LoginPage() {
   async function handleGoogleSignIn() {
     setLoading(true)
     setError(null)
-    if (!auth) {
+    if (!auth || !googleProvider) {
       setError('Firebase not initialized');
       setLoading(false);
       return;
