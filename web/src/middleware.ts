@@ -8,6 +8,8 @@ export function middleware(req: NextRequest) {
 
   if (pathname.startsWith('/admin')) {
     const session = req.cookies.get('mj_session')?.value
+    // Edge middleware: fast redirect for missing cookies (Firebase Admin SDK not edge-compatible).
+    // Only cookie presence is checked here; full verification happens in the server layout for layered security.
     if (!session) {
       const url = req.nextUrl.clone()
       url.pathname = '/login'
