@@ -70,7 +70,7 @@ Security Model: Just-in-Time Credential Generation
    - Credential exists for ~10 minutes (test duration)
    - Active only during CI run
    - Automatically expires
-   - Reduced attack window: 99.98% reduction
+   - Reduced attack window: 99.981% reduction
 
    Math:
    - Traditional: 525,600 min/year (always active)
