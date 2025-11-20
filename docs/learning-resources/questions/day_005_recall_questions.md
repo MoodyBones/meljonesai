@@ -70,12 +70,12 @@ Security Model: Just-in-Time Credential Generation
    - Credential exists for ~10 minutes (test duration)
    - Active only during CI run
    - Automatically expires
-   - Reduced attack window: 99.981% reduction
+   - Reduced attack window: 93.06% reduction
 
    Math:
    - Traditional: 525,600 min/year (always active)
-   - JIT: ~100 min/year (10 min × 10 CI runs/day × 365 days ÷ 365)
-   - Attack window: 100 / 525,600 = 0.019% (99.98% reduction)
+   - JIT: 36,500 min/year (10 min × 10 CI runs/day × 365 days)
+   - Attack window: 36,500 / 525,600 = 6.94% (93.06% reduction)
 
 5. Audit Trail Benefits
 
