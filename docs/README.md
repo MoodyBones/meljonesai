@@ -213,6 +213,132 @@ See [.github/copilot-instructions.md](../.github/copilot-instructions.md) for co
 
 ---
 
+## 📝 End-of-Session (EOS) Process
+
+**Purpose:** Preserve knowledge and maintain project documentation after each work session.
+
+### EOS Checklist (15-20 min)
+
+Follow these steps at the end of every development session:
+
+#### 1. Check for Uncommitted Changes
+```bash
+git status
+```
+- Ensure all work is committed or stashed
+- No loose files should remain uncommitted
+
+#### 2. Update CHANGES.md
+Add a new session entry documenting:
+- **Duration** - Time spent on session
+- **Status** - Complete/In Progress/Blocked
+- **Focus** - Main objectives
+- **Summary** - Brief overview (2-3 sentences)
+- **Work Completed** - Detailed breakdown by category
+- **Files Created/Updated** - List with file paths
+- **Technical Decisions** - Key choices made and why
+- **Testing Completed** - What was validated
+- **Next Steps** - Clear actions for next session
+- **Notes** - Important context
+
+See [CHANGES.md](./CHANGES.md) Session 4 for template example.
+
+#### 3. Create Learning Resources (3-Document Pattern)
+
+Create three documents in `docs/learning-resources/`:
+
+**A. Recall Questions** (`questions/day_XXX_recall_questions.md`)
+- 5-7 spaced repetition questions covering key concepts
+- Include detailed answers
+- Add review schedule (24hr, 3-day, 7-day)
+- Focus on concepts that should become second nature
+
+**B. Technical Deep Dive** (`posts/day_XXX_linked_post_1.md`)
+- Explain major technical decisions in depth
+- Why we chose specific approaches
+- Trade-offs considered
+- Implementation details
+- Debugging patterns discovered
+- Further reading references
+
+**C. Product Rationale** (`posts/day_XXX_linked_post_2.md`)
+- UX and product implications of technical decisions
+- User-facing impact
+- Business value delivered
+- ROI analysis (time saved, quality improved)
+- Metrics and measurements
+
+#### 4. Verify Documentation Updates
+
+Check that these are current:
+- ✅ **README.md** - Status section reflects current milestone
+- ✅ **QUICKSTART.md** - Setup steps still accurate
+- ✅ **REFERENCE.md** - Architecture changes documented
+- ✅ **.github/copilot-instructions.md** - New patterns added
+
+#### 5. Final Commit
+
+Commit all EOS documentation:
+```bash
+git add docs/CHANGES.md docs/learning-resources/
+git commit -m "docs: add Day XXX EOS documentation and learning resources
+
+- Update CHANGES.md with session work
+- Create recall questions for spaced repetition
+- Document technical decisions (linked post 1)
+- Document product rationale (linked post 2)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+#### 6. Push to Remote (if applicable)
+```bash
+git push origin develop
+```
+
+### Why EOS Matters
+
+**Knowledge Retention:**
+- Spaced repetition prevents forgetting
+- Technical decisions documented while fresh
+- Context preserved for future sessions
+
+**Onboarding:**
+- New contributors learn from past decisions
+- Historical context prevents repeated mistakes
+- Learning resources accelerate understanding
+
+**ROI:**
+- 15-20 min investment per session
+- Saves hours in context recovery
+- Compounds over time
+
+### EOS Time Budget
+
+| Task | Duration |
+|------|----------|
+| Check uncommitted changes | 1 min |
+| Update CHANGES.md | 5-8 min |
+| Create recall questions | 3-4 min |
+| Write technical deep dive | 4-5 min |
+| Write product rationale | 4-5 min |
+| Verify docs current | 2 min |
+| Final commit & push | 1 min |
+| **Total** | **15-20 min** |
+
+### When to Skip EOS
+
+Only skip EOS if:
+- Session was < 30 minutes
+- No meaningful work completed
+- Pure documentation reading session
+
+**Default: Always do EOS** - It's almost always worth it.
+
+---
+
 ## 📞 Getting Help
 
 ### Documentation Issues
