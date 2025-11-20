@@ -195,7 +195,10 @@ test('authenticated user can access admin', async ({ page }) => {
 - **Cleanup:** Automatic (expires in 1 hour)
 
 **Risk reduction:**
-- Attack window: 8,760 hours → 0.17 hours (99.998% reduction)
+- **Attack window (per run):** 8,760 hours (long-lived token, always valid) → 0.17 hours (JIT token, valid for 10 minutes per CI run)
+- **Attack window (annualized):** 8,760 hours/year → ~608 hours/year (10 CI runs/day × 10 minutes/run × 365 days)
+  - **Reduction:** (8,760 - 608) / 8,760 ≈ 93% annual exposure reduction
+  - *Note: The per-run attack window is 0.17 hours, but cumulative annual exposure is higher if CI runs frequently. Always consider both per-run and total exposure when evaluating risk.*
 - Privilege: Admin → User (limited blast radius)
 - Cleanup: Manual → Automatic (zero maintenance)
 
