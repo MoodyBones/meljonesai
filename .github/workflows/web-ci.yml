@@ -149,6 +149,7 @@ jobs:
           echo "Minting temporary ID token for Playwright authenticated tests..."
           TOKEN=$(node web/scripts/ci-create-id-token.mjs)
           if [ -n "$TOKEN" ]; then
+            echo "::add-mask::$TOKEN"
             echo "✓ ID token minted successfully"
             echo "token=$TOKEN" >> $GITHUB_OUTPUT
             echo "success=true" >> $GITHUB_OUTPUT
