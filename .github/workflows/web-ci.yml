@@ -2,7 +2,7 @@ name: Web CI
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, edited]
     paths:
       - 'web/**'
       - 'package.json'

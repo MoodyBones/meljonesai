@@ -4,11 +4,15 @@ updates:
     directory: '/'
     schedule:
       interval: 'daily'
+    # Open PRs against the develop branch so updates are tested on develop first
+    target-branch: 'develop'
   - package-ecosystem: 'npm'
     directory: '/web'
     schedule:
       interval: 'daily'
+    target-branch: 'develop'
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'weekly'
+    target-branch: 'develop'
