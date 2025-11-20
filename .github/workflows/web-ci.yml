@@ -164,7 +164,7 @@ jobs:
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
           PLAYWRIGHT_AUTH_ID_TOKEN: ${{ steps.mint_token.outputs.token }}
         run: |
-          if [ "${{ steps.mint_token.outputs.success }}" == "true" ]; then
+          if [ -n "${{ steps.mint_token.outputs.token }}" ] && [ "${{ steps.mint_token.outputs.success }}" == "true" ]; then
             echo "Running Playwright tests with authentication enabled"
           else
             echo "Running Playwright tests without authentication (auth tests will be skipped)"
