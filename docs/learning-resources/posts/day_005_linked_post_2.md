@@ -301,7 +301,7 @@ Every push is confident:
 **Skip CI/CD if:**
 
 1. **Prototype/POC**
-   - Will be thrown away in < 1 week
+   - Will be thrown away in <1 week
    - No production users
    - Focus: Speed to demo
 
