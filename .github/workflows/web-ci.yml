@@ -32,9 +32,19 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('web/package-lock.json', 'package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            web/node_modules
+          key: ${{ runner.os }}-modules-${{ hashFiles('web/package-lock.json', 'package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-modules-
 
       - name: Install dependencies
         run: npm ci
@@ -42,13 +52,21 @@ jobs:
       - name: Install native modules for Linux
         run: |
           echo "Installing native binaries for Linux..."
-          npm install --no-save lightningcss-linux-x64-gnu@1.30.2 @tailwindcss/oxide-linux-x64-gnu@4.1.16
-          echo "Verifying native modules..."
-          ls -la node_modules/lightningcss-linux-x64-gnu/ || echo "lightningcss not found"
-          ls -la node_modules/@tailwindcss/oxide-linux-x64-gnu/ || echo "oxide not found"
-          echo "Testing module loading..."
-          node -e "require('lightningcss'); console.log('✓ lightningcss loaded')"
-          node -e "require('@tailwindcss/oxide'); console.log('✓ @tailwindcss/oxide loaded')"
+          # Check if modules already exist (from cache)
+          if [ -f node_modules/lightningcss-linux-x64-gnu/package.json ] && [ -f node_modules/@tailwindcss/oxide-linux-x64-gnu/package.json ]; then
+            echo "✓ Native modules already installed from cache"
+            node -e "require('lightningcss'); console.log('✓ lightningcss loaded')"
+            node -e "require('@tailwindcss/oxide'); console.log('✓ @tailwindcss/oxide loaded')"
+          else
+            echo "Installing native modules..."
+            npm install --no-save lightningcss-linux-x64-gnu@1.30.2 @tailwindcss/oxide-linux-x64-gnu@4.1.16
+            echo "Verifying native modules..."
+            ls -la node_modules/lightningcss-linux-x64-gnu/ || echo "lightningcss not found"
+            ls -la node_modules/@tailwindcss/oxide-linux-x64-gnu/ || echo "oxide not found"
+            echo "Testing module loading..."
+            node -e "require('lightningcss'); console.log('✓ lightningcss loaded')"
+            node -e "require('@tailwindcss/oxide'); console.log('✓ @tailwindcss/oxide loaded')"
+          fi
 
       - name: Lint web workspace
         run: npm --workspace=web run lint
@@ -72,22 +90,71 @@ jobs:
           SANITY_WRITE_TOKEN: ${{ secrets.SANITY_WRITE_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           N8N_WEBHOOK_SECRET: ${{ secrets.N8N_WEBHOOK_SECRET }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
         run: |
           echo "Checking required repository secrets..."
           missing=""
+          firebase_missing=""
+
+          # Check general secrets
           for v in SANITY_PREVIEW_SECRET NEXT_PUBLIC_SITE_URL SANITY_WRITE_TOKEN ANTHROPIC_API_KEY N8N_WEBHOOK_SECRET; do
             if [ -z "${!v}" ]; then
               missing="$missing $v"
             fi
           done
+
+          # Check Firebase secrets separately (needed for authenticated Playwright tests)
+          for v in FIREBASE_PROJECT_ID FIREBASE_CLIENT_EMAIL FIREBASE_PRIVATE_KEY NEXT_PUBLIC_FIREBASE_API_KEY; do
+            if [ -z "${!v}" ]; then
+              firebase_missing="$firebase_missing $v"
+            fi
+          done
+
           missing="${missing## }"
+          firebase_missing="${firebase_missing## }"
+
           echo "missing=$missing" >> $GITHUB_OUTPUT
+          echo "firebase_missing=$firebase_missing" >> $GITHUB_OUTPUT
+
           if [ -n "$missing" ]; then
-            echo "The following required secrets are missing: $missing"
+            echo "⚠️  The following required secrets are missing: $missing"
             echo "secrets_ok=false" >> $GITHUB_OUTPUT
           else
-            echo "All required secrets present"
+            echo "✓ All required secrets present"
             echo "secrets_ok=true" >> $GITHUB_OUTPUT
+          fi
+
+          if [ -n "$firebase_missing" ]; then
+            echo "⚠️  Firebase secrets missing (authenticated tests will be skipped): $firebase_missing"
+            echo "firebase_ok=false" >> $GITHUB_OUTPUT
+          else
+            echo "✓ Firebase secrets present (authenticated tests enabled)"
+            echo "firebase_ok=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Mint authentication token for Playwright
+        id: mint_token
+        if: steps.verify_secrets.outputs.firebase_ok == 'true'
+        continue-on-error: true
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+        run: |
+          echo "Minting temporary ID token for Playwright authenticated tests..."
+          TOKEN=$(node web/scripts/ci-create-id-token.mjs)
+          if [ -n "$TOKEN" ]; then
+            echo "✓ ID token minted successfully"
+            echo "token=$TOKEN" >> $GITHUB_OUTPUT
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️  Failed to mint ID token"
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
           fi
 
       - name: Run Playwright smoke tests
@@ -95,7 +162,13 @@ jobs:
         env:
           SANITY_PREVIEW_SECRET: ${{ secrets.SANITY_PREVIEW_SECRET }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          PLAYWRIGHT_AUTH_ID_TOKEN: ${{ steps.mint_token.outputs.token }}
         run: |
+          if [ "${{ steps.mint_token.outputs.success }}" == "true" ]; then
+            echo "Running Playwright tests with authentication enabled"
+          else
+            echo "Running Playwright tests without authentication (auth tests will be skipped)"
+          fi
           npm --workspace=web run test:e2e --if-present
 
       - name: Upload Playwright artifacts
