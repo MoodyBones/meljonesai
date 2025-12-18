@@ -1,48 +1,203 @@
-Title: M2 — n8n Workflow Implementation (11-node automation)
+Title: M2 — n8n Workflow Implementation (Phase 2)
 
-Description
+## Description
 
-This issue implements Milestone 2: the n8n automation workflow that receives admin form data, calls Gemini, and creates a Sanity draft. It contains the node-level tasks, integration details, deliverables, and relevant decisions.
+**Phase:** 2 (Scale)
+**Status:** Planned
+**Dependencies:** M3 (Sanity schemas must exist)
 
-Robust instructions (from Copilot guide)
+This milestone implements the n8n automation workflow that receives admin form data, calls Gemini for content generation, and creates a Sanity draft. This is Phase 2 work—the MVP ships first with manually curated content.
 
-- Workflow nodes and responsibilities:
+---
 
-  1. Webhook Trigger - receive job application data
-  2. Validate Input - check required fields (jobDescription, companyName, roleTitle)
-  3. Company Research - optional enrichment (non-blocking)
-  4. Prepare Prompt - build Gemini prompt ensuring JSON-only output
-  5. Gemini API Call - call Gemini 2.0 Flash (generativelanguage API)
-  6. Parse Response - extract and parse JSON from model output
-  7. Map to Sanity - construct `jobApplication` Sanity document
-  8. Create Draft - Sanity mutate API to create draft
-  9. Send Notification - optional notification on success
-  10. Error Handler - capture and log workflow failures
-  11. Response - return success/error to the client
+## Why Phase 2?
 
-- Implementation details:
-  - Save each Function-node's code to source-controlled files (e.g. `n8n-nodes/`) for version history.
-  - For the Gemini step use the REST endpoint described in the guide and include `?key={{ $env.GEMINI_API_KEY }}`.
-  - Parse model output carefully: remove code fences and parse JSON; validate required fields before continuing.
-  - Keep company research non-blocking: if it fails, proceed with placeholders.
-  - Use environment variables in n8n for sensitive values: `GEMINI_API_KEY`, `SANITY_PROJECT_ID`, `SANITY_DATASET`, `SANITY_TOKEN`.
+The "Career Storytelling" strategy prioritises:
+1. **Phase 1:** Ship one polished page with manually curated content (demonstrates craft)
+2. **Phase 2:** Add automation to scale (demonstrates systems thinking)
 
-Key deliverables
+The automation becomes "invisible infrastructure—mentioned if asked, not featured." The visible output is the polished page.
 
-- Exported n8n workflow JSON (e.g. `automation/n8n/workflows/job-to-application.json`)
-- Node function code saved under `n8n-nodes/` (validation, prompt builder, parser, mapper)
-- Documentation in the issue describing how to run and test the workflow locally or on the Hostinger instance
+---
 
-Important pragmatic decisions
+## Workflow Overview
 
-- n8n will be self-hosted (Hostinger VPS) for the MVP. This affects webhook URLs and environment management.
-- Gemini model: use `gemini-2.0-flash` as chosen in the project guide.
-- Keep the workflow tolerant: avoid failing the entire pipeline for non-critical enrichment (company research).
+**11-node workflow:**
 
-Checklist
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. Webhook Trigger                                          │
+│     - Receive POST from /api/trigger-workflow                │
+│     - Verify N8N_WEBHOOK_SECRET                              │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│  2. Validate Input                                           │
+│     - Check required: jobDescription, companyName, roleTitle │
+│     - Return 400 if missing                                  │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│  3. Company Research (non-blocking)                          │
+│     - HTTP request to company website                        │
+│     - Extract key info (About, Products, Culture)            │
+│     - On failure: use placeholders, continue                 │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│  4. Prepare Prompt                                           │
+│     - Combine: job description + company research + portfolio│
+│     - Structure for JSON-only output                         │
+│     - Include researchContext fields in expected output      │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│  5. Gemini API Call                                          │
+│     - POST to generativelanguage.googleapis.com              │
+│     - Model: gemini-2.0-flash                                │
+│     - Temperature: 0.7                                       │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│  6. Parse Response                                           │
+│     - Strip code fences if present                           │
+│     - Parse JSON                                             │
+│     - Validate required fields                               │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│  7. Map to Sanity Schema                                     │
+│     - Generate slug from company + role                      │
+│     - Map AI output to jobApplication fields                 │
+│     - Include researchContext object                         │
+│     - Set status: "ai-generated"                             │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│  8. Create Sanity Draft                                      │
+│     - POST to Sanity mutations API                           │
+│     - Create draft document                                  │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│  9. Send Notification (optional)                             │
+│     - Email or webhook on success                            │
+│     - Include Sanity Studio link                             │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│  10. Error Handler                                           │
+│      - Catch failures from any node                          │
+│      - Log error details                                     │
+│      - Continue to response node                             │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│  11. Response                                                │
+│      - Return success: { status, sanityUrl }                 │
+│      - Return error: { status, message }                     │
+└─────────────────────────────────────────────────────────────┘
+```
 
-- [ ] Implement each node and save code artifacts
-- [ ] Export workflow JSON and commit to repo
-- [ ] Configure environment variables in the n8n host
-- [ ] Test end-to-end: admin form → n8n → Gemini → Sanity draft
-- [ ] Add error handling and logging
+---
+
+## Gemini Prompt Structure
+
+The prompt should instruct Gemini to output JSON matching the Sanity schema:
+
+```json
+{
+  "researchContext": {
+    "companyPainPoints": ["..."],
+    "roleKeywords": ["..."],
+    "proofPoints": [
+      {
+        "claim": "...",
+        "evidence": "...",
+        "relevance": "..."
+      }
+    ],
+    "companyResearch": "...",
+    "toneAdjustments": "warm"
+  },
+  "customIntroduction": "...",
+  "alignmentPoints": [
+    {
+      "heading": "...",
+      "body": "..."
+    }
+  ],
+  "closingStatement": "...",
+  "linkedProjects": ["P-01", "P-03"]
+}
+```
+
+---
+
+## Key Deliverables
+
+- `automation/n8n/workflows/job-to-application.json` — Exported workflow
+- `automation/n8n/nodes/` — Source-controlled function code
+  - `validate-input.js`
+  - `prepare-prompt.js`
+  - `parse-response.js`
+  - `map-to-sanity.js`
+- Documentation for local testing and Hostinger deployment
+
+---
+
+## Environment Variables (n8n)
+
+```bash
+GEMINI_API_KEY          # Google AI API key
+SANITY_PROJECT_ID       # Sanity project ID
+SANITY_DATASET          # production
+SANITY_TOKEN            # Write token
+N8N_WEBHOOK_SECRET      # Shared secret with Next.js
+```
+
+---
+
+## Implementation Notes
+
+### Tolerant workflow design
+
+- Company research is non-blocking: if scraping fails, use placeholders
+- Gemini response parsing handles code fences and malformed JSON
+- Error handler captures failures without crashing workflow
+
+### Schema alignment
+
+The workflow must populate the same schema defined in M3:
+- `researchContext` object with all sub-fields
+- `alignmentPoints` array (not cxDesignAlignment/automationAndTechFit)
+- Status set to `ai-generated` (Phase 2 entry point)
+
+### Project selection
+
+The prompt should include your portfolio projects so Gemini can select the most relevant 2-3 for `linkedProjects`. Pass project IDs (P-01, P-02, etc.) and brief descriptions.
+
+---
+
+## Testing Checklist
+
+- [ ] Webhook receives POST and validates secret
+- [ ] Input validation rejects incomplete requests
+- [ ] Company research works or fails gracefully
+- [ ] Gemini returns parseable JSON
+- [ ] Sanity draft created with correct schema
+- [ ] Status is set to "ai-generated"
+- [ ] Error scenarios return proper error responses
+- [ ] End-to-end: admin form → n8n → Sanity draft
+
+---
+
+## Definition of Done
+
+- [ ] All 11 nodes implemented
+- [ ] Workflow JSON exported and committed
+- [ ] Function code source-controlled
+- [ ] Environment variables documented
+- [ ] Local testing verified
+- [ ] Hostinger deployment documented
+- [ ] Integration with M4 (admin interface) tested
