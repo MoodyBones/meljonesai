@@ -275,7 +275,7 @@ export default async function ApplicationPage({params}: PageProps) {
         <section>
           <div className="prose prose-gray max-w-none">
             {customIntroduction.split('\n\n').map((paragraph) => (
-              <p key={paragraph.substring(0, 50)} className="text-gray-700 leading-relaxed">
+              <p key={paragraph} className="text-gray-700 leading-relaxed">
                 {paragraph}
               </p>
             ))}
