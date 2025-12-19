@@ -1,5 +1,19 @@
 // Types for Sanity documents used by the web app
 
+export type ProofPoint = {
+  claim: string
+  evidence: string
+  relevance: string
+}
+
+export type ResearchContext = {
+  companyPainPoints?: string[]
+  roleKeywords?: string[]
+  proofPoints?: ProofPoint[]
+  companyResearch?: string
+  toneAdjustments?: 'formal' | 'warm' | 'bold' | 'technical'
+}
+
 export type Project = {
   _id: string
   projectId: string
@@ -24,6 +38,7 @@ export type JobApplication = {
   targetCompany: string
   targetRoleTitle: string
   jobUrl?: string
+  researchContext?: ResearchContext
   customIntroduction: string
   alignmentPoints?: AlignmentPoint[]
   linkedProjects?: Project[]

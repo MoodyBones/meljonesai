@@ -1,7 +1,7 @@
 import type {Metadata} from 'next'
 import {sanityFetch} from '@/lib/sanity/client'
 import {APPLICATION_BY_SLUG_QUERY, APPLICATION_SLUGS_QUERY} from '@/lib/sanity/queries'
-import type {JobApplication, Project} from '@/lib/sanity/types'
+import type {JobApplication, Project, ResearchContext} from '@/lib/sanity/types'
 
 type PageProps = {
   params: Promise<{slug: string}>
@@ -43,6 +43,106 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
       description,
     },
   }
+}
+
+const TONE_LABELS: Record<string, string> = {
+  formal: 'Formal & Corporate',
+  warm: 'Warm & Conversational',
+  bold: 'Bold & Direct',
+  technical: 'Technical & Precise',
+}
+
+function ResearchContextAccordion({context, company}: {context: ResearchContext; company: string}) {
+  const hasContent =
+    context.companyPainPoints?.length ||
+    context.roleKeywords?.length ||
+    context.proofPoints?.length ||
+    context.companyResearch ||
+    context.toneAdjustments
+
+  if (!hasContent) return null
+
+  return (
+    <details className="group rounded-lg border border-amber-200 bg-amber-50/50">
+      <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium text-amber-900 hover:bg-amber-100/50">
+        <svg
+          className="h-4 w-4 shrink-0 transition-transform group-open:rotate-90"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        How I researched this application
+      </summary>
+      <div className="border-t border-amber-200 px-4 py-4 text-sm text-amber-900">
+        <div className="space-y-4">
+          {context.companyPainPoints && context.companyPainPoints.length > 0 && (
+            <div>
+              <h4 className="font-medium">{company}&apos;s Pain Points I Can Address</h4>
+              <ul className="mt-1 list-disc pl-5 space-y-0.5 text-amber-800">
+                {context.companyPainPoints.map((point, i) => (
+                  <li key={i}>{point}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {context.roleKeywords && context.roleKeywords.length > 0 && (
+            <div>
+              <h4 className="font-medium">Key Terms from Job Description</h4>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {context.roleKeywords.map((keyword, i) => (
+                  <span
+                    key={i}
+                    className="rounded-full bg-amber-200/60 px-2 py-0.5 text-xs text-amber-900"
+                  >
+                    {keyword}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {context.proofPoints && context.proofPoints.length > 0 && (
+            <div>
+              <h4 className="font-medium">My Proof Points</h4>
+              <ul className="mt-1 space-y-2">
+                {context.proofPoints.map((point, i) => (
+                  <li key={i} className="rounded bg-amber-100/50 p-2">
+                    <p className="font-medium text-amber-900">{point.claim}</p>
+                    <p className="mt-0.5 text-amber-800">{point.evidence}</p>
+                    {point.relevance && (
+                      <p className="mt-0.5 text-xs italic text-amber-700">
+                        Relevance: {point.relevance}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {context.companyResearch && (
+            <div>
+              <h4 className="font-medium">Company Research Notes</h4>
+              <p className="mt-1 text-amber-800 whitespace-pre-line">{context.companyResearch}</p>
+            </div>
+          )}
+
+          {context.toneAdjustments && (
+            <div>
+              <h4 className="font-medium">Tone</h4>
+              <p className="mt-1 text-amber-800">
+                {TONE_LABELS[context.toneAdjustments] || context.toneAdjustments}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </details>
+  )
 }
 
 function ProjectCard({project}: {project: Project}) {
@@ -138,6 +238,7 @@ export default async function ApplicationPage({params}: PageProps) {
   const {
     targetCompany,
     targetRoleTitle,
+    researchContext,
     customIntroduction,
     alignmentPoints,
     linkedProjects,
@@ -163,6 +264,13 @@ export default async function ApplicationPage({params}: PageProps) {
 
       {/* Content */}
       <div className="mx-auto max-w-3xl px-6 py-10 sm:px-8 sm:py-12">
+        {/* Research Context Accordion */}
+        {researchContext && (
+          <section className="mb-8">
+            <ResearchContextAccordion context={researchContext} company={targetCompany} />
+          </section>
+        )}
+
         {/* Introduction */}
         <section>
           <div className="prose prose-gray max-w-none">

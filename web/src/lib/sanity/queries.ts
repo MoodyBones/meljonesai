@@ -13,6 +13,17 @@ export const APPLICATION_BY_SLUG_QUERY = `
   targetCompany,
   targetRoleTitle,
   jobUrl,
+  researchContext{
+    companyPainPoints,
+    roleKeywords,
+    proofPoints[]{
+      claim,
+      evidence,
+      relevance
+    },
+    companyResearch,
+    toneAdjustments
+  },
   customIntroduction,
   alignmentPoints[]{
     heading,
