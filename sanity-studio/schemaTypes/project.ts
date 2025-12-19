@@ -56,10 +56,28 @@ export default defineType({
       description: 'Skills demonstrated',
     }),
     defineField({
+      name: 'organisation',
+      title: 'Organisation',
+      type: 'string',
+      description: 'Company or context (e.g., HYRE, Sea-Watch, Personal)',
+    }),
+    defineField({
       name: 'year',
       title: 'Year',
       type: 'string',
       description: 'Year completed (e.g., 2024)',
+    }),
+    defineField({
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      options: {
+        list: [
+          {title: 'Completed', value: 'completed'},
+          {title: 'In Progress', value: 'in-progress'},
+        ],
+      },
+      initialValue: 'completed',
     }),
     defineField({
       name: 'url',
