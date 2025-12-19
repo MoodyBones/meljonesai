@@ -48,3 +48,8 @@ dist/
 # macOS
 .DS_Store
 node_modules/
+
+# Personal career docs (private)
+docs/brag-sheet.md
+docs/master-proof-points.md
+docs/future-reflection-prompts.md
