@@ -135,7 +135,7 @@ This document provides the technical architecture and milestone overview for Mel
 
 ## Data Models
 
-### Job Application (Sanity Schema)
+### Job Application (Sanity Schema - Phase 2)
 
 ```typescript
 jobApplication {
@@ -144,11 +144,19 @@ jobApplication {
   targetCompany: string           // "Acme Corporation"
   targetRoleTitle: string         // "Senior CX Designer"
 
-  // AI-Generated Content
+  // Content Fields (Display Outputs)
   customIntroduction: text        // 2-3 paragraphs tailored to company
-  cxDesignAlignment: array<text>  // 3-4 bullet points
-  automationAndTechFit: array<text> // 3-4 bullet points
+  alignmentPoints: array<object>  // Structured alignment bullets (min 2)
+    // { category: 'cx-design' | 'automation' | 'technical' | 'general', content: text }
   closingStatement: text          // 2-3 sentences
+
+  // Research Context (Thinking Tool - Inputs)
+  researchContext: object {
+    painPoints: array<text>       // Company/role challenges identified
+    keywords: array<text>         // Key terms, technologies, values to emphasize
+    proofPoints: array<text>      // Evidence/metrics to highlight
+    notes: text                   // Additional research notes (optional)
+  }
 
   // References
   linkedProjects: array<reference> // Max 3 project IDs (P-01, P-02, etc.)
@@ -157,12 +165,16 @@ jobApplication {
   jobUrl: url                     // Original job posting link
   yourNotes: text                 // Private notes (not published)
   priority: 'high' | 'medium' | 'low'
-  status: 'ai-generated' | 'in-review' | 'approved' | 'published' | 'archived'
-  companyResearch: text           // AI-generated company insights
+  status: 'draft' | 'ai-generated' | 'in-review' | 'approved' | 'published' | 'archived'
   createdAt: datetime
   publishedAt: datetime
 }
 ```
+
+**Schema Philosophy:**
+- `researchContext` = inputs (what you research about the company)
+- Content fields = outputs (what gets displayed on the page)
+- Supports both manual curation (Phase 1) and AI automation (Phase 2)
 
 ### Project (Sanity Schema)
 
@@ -210,18 +222,27 @@ N8N_WEBHOOK_SECRET
 
 ## Milestone Overview
 
-| Milestone | Description | Time | Status |
-|-----------|-------------|------|--------|
-| **M0** | Planning & Documentation | 6h | ✅ Complete |
-| **M1** | Firebase Authentication | 1.5h | ✅ Complete |
-| **M2** | n8n Workflow Setup | 2.5h | 🎯 Next |
-| **M3** | Sanity Schemas + Projects | 1.5h | Pending |
-| **M4** | Admin Interface | 1.5h | Pending |
-| **M5** | Content Generation Testing | 45min | Pending |
-| **M6** | Testing & Deployment | 15min | Pending |
+**Project Phases:**
+- **Phase 1 (MVP):** Ship one polished page with manually curated content
+  - Critical Path: M1 (Auth) → M3 (Schemas) → M6a (Deploy MVP)
+- **Phase 2 (Scale):** Add automation with n8n + Gemini
+  - Critical Path: M3 (Schemas) → M2 (n8n) → M4 (Admin UI) → M5 (Testing) → M6b (Deploy)
 
-**Total Estimated Time:** 8 hours (excludes planning)
-**Critical Path:** M2 (n8n) → M3 (Sanity) → M4 (Admin UI)
+| Milestone | Description | Time | Phase | Status |
+|-----------|-------------|------|-------|--------|
+| **M0** | Planning & Documentation | 6h | Both | ✅ Complete |
+| **M1** | Firebase Authentication | 1.5h | 1 | ✅ Complete |
+| **M2** | n8n Workflow Setup | 2.5h | 2 | Phase 2 |
+| **M3** | Sanity Schemas + Projects | 1.5h | 1 | 🎯 Phase 1 Priority |
+| **M4** | Admin Interface | 1.5h | 2 | Phase 2 |
+| **M5** | Content Generation Testing | 45min | 2 | Phase 2 |
+| **M6a** | Deploy MVP (Manual Content) | 1h | 1 | Phase 1 |
+| **M6b** | Full Production Deployment | 1h | 2 | Phase 2 |
+
+**Total Estimated Time:** ~10 hours (excludes planning)
+
+**Phase 1 Critical Path:** M1 → M3 → M6a  
+**Phase 2 Critical Path:** M3 → M2 → M4 → M5 → M6b
 
 ---
 
@@ -273,18 +294,25 @@ N8N_WEBHOOK_SECRET
 
 ## M2: n8n Workflow
 
-**Status:** 🎯 Next Up
+**Status:** Phase 2 (Automation)
 **Estimated Time:** 2.5 hours
-**Priority:** HIGH (Critical Path)
+**Dependencies:** M3 (Sanity Schemas must exist first)
 
 ### Objective
 
-Build fully automated workflow that:
+Build fully automated Phase 2 workflow that:
 1. Receives webhook from Next.js admin form
 2. Researches company (HTTP requests, basic scraping)
-3. Generates tailored content via Gemini 2.0 Flash
-4. Creates draft in Sanity CMS
+3. Generates tailored content via Gemini 2.0 Flash with Phase 2 schema
+4. Creates draft in Sanity CMS with status `ai-generated`
 5. Returns success notification
+
+### Phase 2 Schema Structure
+
+The workflow generates applications with:
+- **alignmentPoints**: Structured array with category + content
+- **researchContext**: Object with painPoints, keywords, proofPoints
+- **status**: Set to `ai-generated` (vs `draft` for manual Phase 1)
 
 ### Key Tasks
 

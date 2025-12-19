@@ -6,7 +6,7 @@ This issue implements Milestone 3: Sanity schemas for `jobApplication` and `proj
 
 Robust instructions (from Copilot guide)
 
-- Schema requirements for `jobApplication`:
+- Schema requirements for `jobApplication` (Phase 2 structure):
 
   - Document type: `jobApplication`
   - Fields:
@@ -14,18 +14,29 @@ Robust instructions (from Copilot guide)
     - targetCompany (string, required)
     - targetRoleTitle (string, required)
     - customIntroduction (text, required, rows: 4) — min length validation (e.g. 50 chars)
-    - cxDesignAlignment (array of text objects) — min 2 items
-    - automationAndTechFit (array of text objects) — min 2 items
+    - alignmentPoints (array of objects) — min 2 items
+      - Each item: { category: string, content: text }
+      - Categories: 'cx-design', 'automation', 'technical', 'general'
     - closingStatement (text, required)
-    - linkedProjects (array of references to `project`, max 2)
+    - linkedProjects (array of references to `project`, max 3)
+    - researchContext (object) — Research inputs (supports both manual and AI workflows)
+      - painPoints: array of text — Company/role challenges identified
+      - keywords: array of text — Key terms, technologies, values
+      - proofPoints: array of text — Evidence/metrics to highlight
+      - notes: text (optional) — Additional research notes
     - jobUrl (url)
     - yourNotes (text)
     - priority (string: high/medium/low, default medium)
-    - status (string: ai-generated, in-review, approved, published, archived; default ai-generated)
-    - companyResearch (text)
+    - status (string: draft, ai-generated, in-review, approved, published, archived; default draft)
     - createdAt (datetime)
     - publishedAt (datetime)
   - Preview: show `targetCompany` and `targetRoleTitle`.
+  
+  **Note:** This replaces the old `cxDesignAlignment` and `automationAndTechFit` arrays with a unified `alignmentPoints` structure, and moves company research into a structured `researchContext` object.
+  
+  **Phase Considerations:**
+  - Phase 1 (Manual): Status defaults to `draft`. Users manually populate `researchContext` and content fields.
+  - Phase 2 (Automated): n8n workflow sets status to `ai-generated` and populates all fields via Gemini API.
 
 - Schema requirements for `project`:
   - Document type: `project`

@@ -1,0 +1,184 @@
+{
+  "name": "Job Description → Application (Phase 2)",
+  "version": "2.0",
+  "description": "Phase 2 n8n workflow that generates job applications using Gemini API and the new schema structure with alignmentPoints and researchContext",
+  "nodes": [
+    {
+      "id": "1",
+      "type": "n8n-nodes-base.webhook",
+      "name": "Webhook Trigger",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "job-to-application",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "job-to-application-webhook"
+    },
+    {
+      "id": "2",
+      "type": "n8n-nodes-base.function",
+      "name": "Validate Input",
+      "parameters": {
+        "functionCode": "// See: automation/n8n/nodes/validate-input.js\n// Validate required fields\nconst { jobDescription, companyName, roleTitle } = $json;\n\nif (!jobDescription || !companyName || !roleTitle) {\n  throw new Error('Missing required field: jobDescription, companyName, or roleTitle');\n}\n\nreturn [{\n  json: {\n    jobDescription,\n    companyName,\n    roleTitle,\n    receivedAt: new Date().toISOString()\n  }\n}];"
+      }
+    },
+    {
+      "id": "3",
+      "type": "n8n-nodes-base.httpRequest",
+      "name": "Company Research",
+      "parameters": {
+        "url": "={{ $json.companyWebsite || '' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 5000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": true,
+              "maxRedirects": 3
+            }
+          }
+        }
+      },
+      "continueOnFail": true,
+      "notes": "Non-blocking: If this fails, workflow continues with minimal researchContext"
+    },
+    {
+      "id": "4",
+      "type": "n8n-nodes-base.function",
+      "name": "Prepare Prompt (Phase 2)",
+      "parameters": {
+        "functionCode": "// See: automation/n8n/nodes/prepare-prompt.js\nconst p = $json;\n\nconst projects = [\n  { id: 'P-01', name: 'Pivot Platform', focus: 'Product Strategy', keyMetric: 'transformed near-zero returns to active re-engagement' },\n  { id: 'P-02', name: 'Future-Proof Foundation', focus: 'Frontend Architecture', keyMetric: 'saved 6+ months development time' },\n  { id: 'P-03', name: 'Ops Autopilot', focus: 'Workflow Automation', keyMetric: 'eliminated manual job matching process' },\n  { id: 'P-04', name: 'Knowledge Transfer Engine', focus: 'Documentation & Onboarding', keyMetric: 'reduced onboarding from weeks to 20 minutes' },\n  { id: 'P-05', name: 'Career Stories Platform', focus: 'AI-assisted development', keyMetric: 'accelerated 0→1 development' }\n];\n\nconst prompt = `You are an assistant that outputs JSON only.\n\nGiven the job description and the candidate's portfolio, produce a JSON object with the following structure:\n\n{\n  \"targetCompany\": \"Company name from job posting\",\n  \"targetRoleTitle\": \"Role title from job posting\",\n  \"customIntroduction\": \"2-3 short sentences introducing the candidate\",\n  \"alignmentPoints\": [\n    { \"category\": \"cx-design\", \"content\": \"One bullet point about CX/design alignment\" },\n    { \"category\": \"automation\", \"content\": \"One bullet point about automation experience\" },\n    { \"category\": \"technical\", \"content\": \"One bullet point about technical fit\" }\n  ],\n  \"closingStatement\": \"One sentence closing statement\",\n  \"linkedProjectIds\": [\"P-01\"],\n  \"researchContext\": {\n    \"painPoints\": [\"Company challenge 1\", \"Company challenge 2\"],\n    \"keywords\": [\"keyword1\", \"keyword2\", \"keyword3\"],\n    \"proofPoints\": [\"metric1\", \"metric2\"]\n  }\n}\n\nCategories for alignmentPoints:\n- \"cx-design\": User experience, design thinking, product strategy\n- \"automation\": Process automation, workflow optimization, efficiency\n- \"technical\": Technical skills, tools, technologies\n- \"general\": General fit, culture, values\n\nJob Description:\n${p.jobDescription}\n\nAvailable Projects:\n${JSON.stringify(projects, null, 2)}\n\nCompany: ${p.companyName}\nRole: ${p.roleTitle}\n\nReturn only valid JSON. Do not include markdown code fences or explanations.`;\n\nreturn [{\n  json: {\n    prompt,\n    companyName: p.companyName,\n    roleTitle: p.roleTitle\n  }\n}];"
+      }
+    },
+    {
+      "id": "5",
+      "type": "n8n-nodes-base.httpRequest",
+      "name": "Call Gemini API",
+      "parameters": {
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: $json.prompt\n    }]\n  }],\n  generationConfig: {\n    temperature: 0.7,\n    maxOutputTokens: 2048,\n    responseMimeType: 'application/json'\n  }\n}) }}",
+        "options": {}
+      },
+      "notes": "Uses Gemini 2.0 Flash with JSON response mode for reliable parsing"
+    },
+    {
+      "id": "6",
+      "type": "n8n-nodes-base.function",
+      "name": "Parse Gemini Response",
+      "parameters": {
+        "functionCode": "// See: automation/n8n/nodes/parse-response.js\nconst response = $json;\nlet text = '';\nlet parsed = null;\n\n// Extract text from Gemini response structure\ntry {\n  // Gemini response format: { candidates: [{ content: { parts: [{ text: \"...\" }] } }] }\n  if (response.candidates && response.candidates[0]) {\n    const parts = response.candidates[0].content?.parts;\n    if (parts && parts[0]) {\n      text = parts[0].text;\n    }\n  }\n  \n  if (!text) {\n    text = response.body || response.text || JSON.stringify(response);\n  }\n} catch (e) {\n  console.error('Failed to extract text from response:', e);\n  text = JSON.stringify(response);\n}\n\n// Try to parse as JSON (Gemini should return JSON directly with responseMimeType)\ntry {\n  parsed = JSON.parse(text);\n} catch (e) {\n  // Try to extract JSON from markdown code fences as fallback\n  const jsonMatch = text.match(/```json\\s*([\\s\\S]*?)\\s*```/i);\n  if (jsonMatch) {\n    try {\n      parsed = JSON.parse(jsonMatch[1]);\n    } catch (e2) {\n      console.error('Failed to parse JSON from code fence:', e2);\n      parsed = { raw: text, error: 'Failed to parse JSON' };\n    }\n  } else {\n    console.error('Failed to parse response as JSON:', e);\n    parsed = { raw: text, error: 'Failed to parse JSON' };\n  }\n}\n\n// Validate required fields\nif (parsed && !parsed.error) {\n  const required = ['targetCompany', 'targetRoleTitle', 'customIntroduction', 'alignmentPoints', 'closingStatement'];\n  const missing = required.filter(field => !parsed[field]);\n  \n  if (missing.length > 0) {\n    console.warn('Missing required fields:', missing);\n    parsed.warning = `Missing fields: ${missing.join(', ')}`;\n  }\n  \n  // Validate alignmentPoints structure\n  if (parsed.alignmentPoints && Array.isArray(parsed.alignmentPoints)) {\n    const validCategories = ['cx-design', 'automation', 'technical', 'general'];\n    const invalidPoints = parsed.alignmentPoints.filter(\n      point => !point.category || !point.content || !validCategories.includes(point.category)\n    );\n    \n    if (invalidPoints.length > 0) {\n      console.warn('Invalid alignmentPoints structure detected');\n      parsed.warning = (parsed.warning || '') + ' Invalid alignmentPoints structure';\n    }\n  }\n}\n\nreturn [{\n  json: {\n    application: parsed,\n    companyName: $prevNode.companyName,\n    roleTitle: $prevNode.roleTitle\n  }\n}];"
+      }
+    },
+    {
+      "id": "7",
+      "type": "n8n-nodes-base.function",
+      "name": "Generate Slug",
+      "parameters": {
+        "functionCode": "// See: automation/n8n/nodes/generate-slug.js\nconst { companyName, roleTitle } = $json;\n\nconst slug = (companyName + '-' + roleTitle)\n  .toLowerCase()\n  .replace(/[^a-z0-9-]/g, '-')\n  .replace(/-+/g, '-')\n  .replace(/^-|-$/g, '')\n  .substring(0, 50);\n\nreturn [{\n  json: {\n    ...$json,\n    slug\n  }\n}];"
+      }
+    },
+    {
+      "id": "8",
+      "type": "n8n-nodes-base.function",
+      "name": "Map Project References",
+      "parameters": {
+        "functionCode": "// See: automation/n8n/nodes/map-project-references.js\nconst linkedIds = $json.application && $json.application.linkedProjectIds \n  ? $json.application.linkedProjectIds \n  : [];\n\nconst linkedProjects = linkedIds\n  .slice(0, 3)\n  .map(id => ({\n    _type: 'reference',\n    _ref: id\n  }));\n\nreturn [{\n  json: {\n    ...$json,\n    linkedProjects\n  }\n}];"
+      }
+    },
+    {
+      "id": "9",
+      "type": "n8n-nodes-base.httpRequest",
+      "name": "Create Sanity Draft",
+      "parameters": {
+        "url": "=https://{{ $env.SANITY_PROJECT_ID }}.api.sanity.io/v{{ $env.SANITY_API_VERSION || '2023-05-03' }}/data/mutate/{{ $env.SANITY_DATASET || 'production' }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SANITY_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  mutations: [{\n    create: {\n      _type: 'jobApplication',\n      slug: {\n        _type: 'slug',\n        current: $json.slug\n      },\n      targetCompany: $json.companyName,\n      targetRoleTitle: $json.roleTitle,\n      customIntroduction: $json.application?.customIntroduction || '',\n      alignmentPoints: $json.application?.alignmentPoints || [],\n      closingStatement: $json.application?.closingStatement || '',\n      researchContext: $json.application?.researchContext || {\n        painPoints: [],\n        keywords: [],\n        proofPoints: [],\n        notes: ''\n      },\n      status: 'ai-generated',\n      linkedProjects: $json.linkedProjects || [],\n      priority: 'medium',\n      createdAt: new Date().toISOString()\n    }\n  }]\n}) }}",
+        "options": {}
+      },
+      "notes": "Creates draft with Phase 2 schema structure (alignmentPoints + researchContext)"
+    },
+    {
+      "id": "10",
+      "type": "n8n-nodes-base.function",
+      "name": "Format Response",
+      "parameters": {
+        "functionCode": "// See: automation/n8n/nodes/format-response.js\nreturn [{\n  json: {\n    success: true,\n    slug: $json.slug,\n    message: 'Application draft created successfully',\n    status: 'ai-generated'\n  }\n}];"
+      }
+    },
+    {
+      "id": "11",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "name": "Respond",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{ "node": "Validate Input", "type": "main", "index": 0 }]]
+    },
+    "Validate Input": {
+      "main": [[{ "node": "Company Research", "type": "main", "index": 0 }]]
+    },
+    "Company Research": {
+      "main": [[{ "node": "Prepare Prompt (Phase 2)", "type": "main", "index": 0 }]]
+    },
+    "Prepare Prompt (Phase 2)": {
+      "main": [[{ "node": "Call Gemini API", "type": "main", "index": 0 }]]
+    },
+    "Call Gemini API": {
+      "main": [[{ "node": "Parse Gemini Response", "type": "main", "index": 0 }]]
+    },
+    "Parse Gemini Response": {
+      "main": [[{ "node": "Generate Slug", "type": "main", "index": 0 }]]
+    },
+    "Generate Slug": {
+      "main": [[{ "node": "Map Project References", "type": "main", "index": 0 }]]
+    },
+    "Map Project References": {
+      "main": [[{ "node": "Create Sanity Draft", "type": "main", "index": 0 }]]
+    },
+    "Create Sanity Draft": {
+      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+    },
+    "Format Response": {
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
