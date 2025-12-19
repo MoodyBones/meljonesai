@@ -1,10 +1,6 @@
 [build]
-  command = "npm install && npm run build"
+  command = "npm run build"
   publish = ".next"
-
-[build.environment]
-  NPM_FLAGS = "--force"
-  NODE_VERSION = "20"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
