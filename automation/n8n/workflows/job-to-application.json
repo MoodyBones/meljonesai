@@ -1,5 +1,7 @@
 {
-  "name": "Job Description → Application",
+  "name": "Job Description → Application (v1.0 - DEPRECATED)",
+  "version": "1.0",
+  "description": "⚠️ DEPRECATED: This workflow uses the old schema structure. Use job-to-application-phase2.json instead. Kept for reference only.",
   "nodes": [
     {
       "id": "1",
