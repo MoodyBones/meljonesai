@@ -1,6 +1,6 @@
 [build]
   base = "."
-  command = "npm ci && npm install --no-save lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu && npm --workspace=web run build"
+  command = "npm ci && npm --workspace=web run build"
   publish = "web/.next"
 
 [build.environment]
