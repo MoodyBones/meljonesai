@@ -82,8 +82,8 @@ function ResearchContextAccordion({context, company}: {context: ResearchContext;
             <div>
               <h4 className="font-medium">{company}&apos;s Pain Points I Can Address</h4>
               <ul className="mt-1 list-disc pl-5 space-y-0.5 text-amber-800">
-                {context.companyPainPoints.map((point, i) => (
-                  <li key={i}>{point}</li>
+                {context.companyPainPoints.map((point) => (
+                  <li key={point}>{point}</li>
                 ))}
               </ul>
             </div>
@@ -93,9 +93,9 @@ function ResearchContextAccordion({context, company}: {context: ResearchContext;
             <div>
               <h4 className="font-medium">Key Terms from Job Description</h4>
               <div className="mt-1 flex flex-wrap gap-1.5">
-                {context.roleKeywords.map((keyword, i) => (
+                {context.roleKeywords.map((keyword) => (
                   <span
-                    key={i}
+                    key={keyword}
                     className="rounded-full bg-amber-200/60 px-2 py-0.5 text-xs text-amber-900"
                   >
                     {keyword}
@@ -109,8 +109,8 @@ function ResearchContextAccordion({context, company}: {context: ResearchContext;
             <div>
               <h4 className="font-medium">My Proof Points</h4>
               <ul className="mt-1 space-y-2">
-                {context.proofPoints.map((point, i) => (
-                  <li key={i} className="rounded bg-amber-100/50 p-2">
+                {context.proofPoints.map((point) => (
+                  <li key={point.claim} className="rounded bg-amber-100/50 p-2">
                     <p className="font-medium text-amber-900">{point.claim}</p>
                     <p className="mt-0.5 text-amber-800">{point.evidence}</p>
                     {point.relevance && (
@@ -274,8 +274,8 @@ export default async function ApplicationPage({params}: PageProps) {
         {/* Introduction */}
         <section>
           <div className="prose prose-gray max-w-none">
-            {customIntroduction.split('\n\n').map((paragraph, i) => (
-              <p key={i} className="text-gray-700 leading-relaxed">
+            {customIntroduction.split('\n\n').map((paragraph) => (
+              <p key={paragraph.substring(0, 50)} className="text-gray-700 leading-relaxed">
                 {paragraph}
               </p>
             ))}
@@ -289,8 +289,8 @@ export default async function ApplicationPage({params}: PageProps) {
               Why I&apos;m a great fit
             </h2>
             <div className="mt-6 space-y-6">
-              {alignmentPoints.map((point, i) => (
-                <div key={i} className="rounded-lg bg-white border border-gray-200 p-5">
+              {alignmentPoints.map((point) => (
+                <div key={point.heading} className="rounded-lg bg-white border border-gray-200 p-5">
                   <h3 className="font-semibold text-gray-900">{point.heading}</h3>
                   <p className="mt-2 text-gray-600 leading-relaxed">{point.body}</p>
                 </div>
