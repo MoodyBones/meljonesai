@@ -33,5 +33,8 @@
   "optionalDependencies": {
     "lightningcss-linux-x64-gnu": "1.30.2",
     "@tailwindcss/oxide-linux-x64-gnu": "4.1.17"
+  },
+  "comments": {
+    "optionalDependencies": "Native Rust binaries for Linux builds. Pinned versions prevent supply-chain attacks. See: https://github.com/npm/cli/issues/4828 for why explicit versions are needed."
   }
 }
