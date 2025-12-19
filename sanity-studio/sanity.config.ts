@@ -11,7 +11,7 @@ export default defineConfig({
   projectId: 'psf3aj1o',
   dataset: 'production',
 
-  tools: [structureTool({structure: desk}), visionTool()],
+  plugins: [structureTool({structure: desk}), visionTool()],
 
   schema: {
     types: schemaTypes,
