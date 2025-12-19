@@ -60,7 +60,7 @@ jobs:
             echo "✓ Native modules already working"
           else
             echo "Installing native modules..."
-            npm install --no-save lightningcss-linux-x64-gnu@1.30.2 @tailwindcss/oxide-linux-x64-gnu@4.1.16
+            npm install --no-save lightningcss-linux-x64-gnu@1.30.2 @tailwindcss/oxide-linux-x64-gnu@4.1.17
             echo "Verifying native modules..."
             ls -la node_modules/lightningcss-linux-x64-gnu/ || echo "lightningcss not found"
             ls -la node_modules/@tailwindcss/oxide-linux-x64-gnu/ || echo "oxide not found"
