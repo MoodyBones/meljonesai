@@ -1,5 +1,12 @@
 import type {SanityDocument} from 'sanity'
 
+// Type for documents with slug field
+interface DocumentWithSlug extends SanityDocument {
+  slug?: {
+    current?: string
+  }
+}
+
 /**
  * Resolve a preview URL for a Sanity document.
  * Returns the Next preview endpoint which will enable Draft Mode and redirect to the page.
@@ -8,7 +15,7 @@ import type {SanityDocument} from 'sanity'
  *   const url = resolveProductionUrl(document)
  *   // open `${url}` in iframe or new tab
  */
-export function resolveProductionUrl(doc: SanityDocument): string {
+export function resolveProductionUrl(doc: DocumentWithSlug): string {
   const slug = (doc?.slug?.current || doc._id || '').toString()
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const secret = process.env.SANITY_PREVIEW_SECRET || 'replace-me'

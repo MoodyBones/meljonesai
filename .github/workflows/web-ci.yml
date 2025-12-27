@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Use Node.js
         uses: actions/setup-node@v6
@@ -29,7 +29,7 @@ jobs:
           cache: 'npm'
 
       - name: Cache npm
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('web/package-lock.json', 'package-lock.json') }}
@@ -37,7 +37,7 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Cache node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             node_modules
@@ -60,7 +60,7 @@ jobs:
             echo "✓ Native modules already working"
           else
             echo "Installing native modules..."
-            npm install --no-save lightningcss-linux-x64-gnu@1.30.2 @tailwindcss/oxide-linux-x64-gnu@4.1.16
+            npm install --no-save lightningcss-linux-x64-gnu@1.30.2 @tailwindcss/oxide-linux-x64-gnu@4.1.17
             echo "Verifying native modules..."
             ls -la node_modules/lightningcss-linux-x64-gnu/ || echo "lightningcss not found"
             ls -la node_modules/@tailwindcss/oxide-linux-x64-gnu/ || echo "oxide not found"
@@ -174,7 +174,7 @@ jobs:
 
       - name: Upload Playwright artifacts
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-test-results
           path: web/test-results/**

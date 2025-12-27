@@ -1,24 +1,18 @@
-import S from '@sanity/desk-tool/structure-builder'
-import {resolveProductionUrl} from './preview/resolveProductionUrl'
+import {StructureBuilder} from 'sanity/structure'
 
-export const desk = () =>
+export const desk = (S: StructureBuilder) =>
   S.list()
     .title('Content')
     .items([
-      S.documentTypeListItem('jobApplication')
+      S.listItem()
         .title('Job Applications')
-        .child((id) =>
-          S.document()
-            .documentId(id)
-            .schemaType('jobApplication')
-            .views([
-              S.view.form(),
-              S.view
-                .iframe()
-                .title('Preview')
-                .options({url: (doc) => resolveProductionUrl(doc)}),
-            ]),
-        ),
+        .schemaType('jobApplication')
+        .child(S.documentTypeList('jobApplication').title('Job Applications')),
+      S.divider(),
+      S.listItem()
+        .title('Projects')
+        .schemaType('project')
+        .child(S.documentTypeList('project').title('Projects')),
     ])
 
 export default desk
