@@ -1,124 +1,89 @@
 {
-  "name": "Job Description → Application",
+  "name": "Job Application Generator",
   "nodes": [
     {
-      "id": "1",
-      "type": "n8n-nodes-base.webhook",
-      "name": "Webhook Trigger",
       "parameters": {
         "httpMethod": "POST",
-        "path": "job-to-application",
+        "path": "job-application",
+        "responseMode": "responseNode",
         "options": {}
-      }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "webhook-trigger",
+      "name": "Receive Job Description",
+      "webhookId": "job-application"
     },
     {
-      "id": "2",
-      "type": "n8n-nodes-base.function",
-      "name": "Validate Input",
       "parameters": {
-        "functionCode": "// Validate required fields\nconst { jobDescription, companyName, roleTitle } = $json;\nif (!jobDescription || !companyName || !roleTitle) { throw new Error('Missing required field'); }\nreturn [{ json: { jobDescription, companyName, roleTitle, receivedAt: new Date().toISOString() } }];"
-      }
-    },
-    {
-      "id": "3",
-      "type": "n8n-nodes-base.httpRequest",
-      "name": "Company Research",
-      "parameters": {
-        "url": "={{ $json.companyWebsite || '' }}",
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=YOUR_GEMINI_API_KEY",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: 'You are a Senior UX Strategist and Technical Copywriter creating content for a job application.\\n\\nCANDIDATE BACKGROUND:\\n- Core Skills: Next.js, TypeScript, Tailwind CSS, Performance optimization\\n- Product & CX: User Story Mapping, A/B Testing, Design Systems, Data-driven decisions\\n- AI & Automation: LLM API integration, n8n workflows, GitHub Actions\\n\\nKEY PROJECTS:\\n- P-01 Pivot Platform: Transformed near-zero user returns to active re-engagement\\n- P-02 Future-Proof Foundation: Saved 6+ months dev time with scalable Nuxt.js architecture\\n- P-03 Ops Autopilot: Eliminated manual job matching with automated recommendations\\n- P-04 Knowledge Transfer Engine: Reduced onboarding from weeks to 20 minutes\\n- P-05 Career Stories Platform: Building with AI tools (Claude/n8n) to accelerate development\\n\\nTARGET APPLICATION:\\nCompany: ' + $json.body.companyName + '\\nRole: ' + $json.body.roleTitle + '\\n\\nJob Description:\\n' + $json.body.jobDescription + '\\n\\nGenerate a compelling 3-sentence introduction paragraph that:\\n1. Opens with a hook showing understanding of the company\\'s specific needs\\n2. Positions the candidate as the solution with relevant experience\\n3. Hints at proven, measurable results\\n\\nTone: Professional, confident, metric-driven, slightly Australian-leaning.\\n\\nReturn ONLY the introduction paragraph, no additional text, headers, or formatting.' }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 500 } }) }}",
         "options": {}
-      }
-    },
-    {
-      "id": "4",
-      "type": "n8n-nodes-base.function",
-      "name": "Prepare Prompt (Structured)",
-      "parameters": {
-        "functionCode": "const p = $json;\nconst projects = [\n  { id: 'P-01', name: 'Pivot Platform', focus: 'Product Strategy', keyMetric: 'transformed near-zero returns to active re-engagement' },\n  { id: 'P-02', name: 'Future-Proof Foundation', focus: 'Frontend Architecture', keyMetric: 'saved 6+ months development time' },\n  { id: 'P-03', name: 'Ops Autopilot', focus: 'Workflow Automation', keyMetric: 'eliminated manual job matching process' },\n  { id: 'P-04', name: 'Knowledge Transfer Engine', focus: 'Documentation & Onboarding', keyMetric: 'reduced onboarding from weeks to 20 minutes' },\n  { id: 'P-05', name: 'Career Stories Platform', focus: 'AI-assisted development', keyMetric: 'accelerated 0→1 development' }\n];\nconst prompt = `You are an assistant that outputs JSON only.\\nGiven the job description and the candidate's portfolio, produce a JSON object with keys: targetCompany, targetRoleTitle, customIntroduction (3 short sentences), cxDesignAlignment (array of 3 bullets), automationAndTechFit (array of 3 bullets), closingStatement (one sentence), linkedProjectId (choose one of P-01..P-05), keyMetrics (string).\\n\\nJob Description:\\n${p.jobDescription}\\n\\nProjects:\\n${JSON.stringify(projects)}\\n\\nReturn only valid JSON.`;\nreturn [{ json: { prompt } }];"
-      }
-    },
-    {
-      "id": "5",
+      },
       "type": "n8n-nodes-base.httpRequest",
-      "name": "Call LLM",
+      "typeVersion": 4.2,
+      "position": [250, 0],
+      "id": "gemini-call",
+      "name": "Generate Introduction"
+    },
+    {
       "parameters": {
-        "url": "={{ $json.endpoint || 'https://api.example-llm.com/generate' }}",
         "method": "POST",
-        "options": {},
-        "bodyParametersJson": "={{ { prompt: $json.prompt, max_tokens: 2000 } }}"
-      }
-    },
-    {
-      "id": "6",
-      "type": "n8n-nodes-base.function",
-      "name": "Parse AI Response",
-      "parameters": {
-        "functionCode": "const response = $json;\\nlet text = '';\\ntry { text = response.body || response.text || JSON.stringify(response); } catch(e) { text = JSON.stringify(response); }\\nconst jsonMatch = text.match(/```json([\\s\\S]*?)```/i);\\nlet parsed = null;\\nif (jsonMatch) {\\n  try { parsed = JSON.parse(jsonMatch[1]); } catch (e) { parsed = null; }\\n}\\nif (!parsed) {\\n  try { parsed = JSON.parse(text); } catch (e) { parsed = { raw: text }; }\\n}\\nconst application = parsed;\\nreturn [{ json: { application } }];"
-      }
-    },
-    {
-      "id": "7",
-      "type": "n8n-nodes-base.function",
-      "name": "Generate Slug",
-      "parameters": {
-        "functionCode": "const { companyName, roleTitle } = $json;\nconst slug = (companyName + '-' + roleTitle).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').substring(0,50);\nreturn [{ json: { ...$json, slug } }];"
-      }
-    },
-    {
-      "id": "8",
-      "type": "n8n-nodes-base.function",
-      "name": "Map Project References",
-      "parameters": {
-        "functionCode": "// Map selected projects to Sanity references (placeholder)\nconst linkedId = $json.application && $json.application.linkedProjectId ? $json.application.linkedProjectId : null;\nconst linkedProjects = linkedId ? [{ _type: 'reference', _ref: linkedId }] : [];\nreturn [{ json: { ...$json, linkedProjects } }];"
-      }
-    },
-    {
-      "id": "9",
-      "type": "n8n-nodes-base.httpRequest",
-      "name": "Create Sanity Draft",
-      "parameters": {
-        "url": "https://api.sanity.io/v1/data/mutate/production",
-        "method": "POST",
-        "options": {
-          "headers": {
-            "Authorization": "Bearer {{$secrets.SANITY_WRITE_TOKEN}}",
-            "Content-Type": "application/json"
-          }
+        "url": "https://psf3aj1o.api.sanity.io/v2024-01-01/data/mutate/production",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer YOUR_SANITY_TOKEN"
+            }
+          ]
         },
-        "bodyParametersJson": "={{ { mutations: [{ create: { _type: 'jobApplication', slug: { current: $json.slug }, targetCompany: $json.companyName, targetRoleTitle: $json.roleTitle, customIntroduction: $json.application && $json.application.customIntroduction ? $json.application.customIntroduction : '', cxDesignAlignment: $json.application && $json.application.cxDesignAlignment ? $json.application.cxDesignAlignment : [], automationAndTechFit: $json.application && $json.application.automationAndTechFit ? $json.application.automationAndTechFit : [], closingStatement: $json.application && $json.application.closingStatement ? $json.application.closingStatement : '', status: 'ai-generated', linkedProjects: $json.linkedProjects } }] } }}"
-      }
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ mutations: [{ createOrReplace: { _type: 'jobApplication', _id: 'drafts.' + $('Receive Job Description').item.json.body.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + $('Receive Job Description').item.json.body.roleTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), targetCompany: $('Receive Job Description').item.json.body.companyName, targetRoleTitle: $('Receive Job Description').item.json.body.roleTitle, customIntroduction: $json.candidates[0].content.parts[0].text, status: 'draft', slug: { _type: 'slug', current: $('Receive Job Description').item.json.body.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + $('Receive Job Description').item.json.body.roleTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }, createdAt: new Date().toISOString() } }] }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 0],
+      "id": "sanity-create",
+      "name": "Create Sanity Draft"
     },
     {
-      "id": "10",
-      "type": "n8n-nodes-base.function",
-      "name": "Format Response",
       "parameters": {
-        "functionCode": "return [{ json: { success: true, slug: $json.slug } }];"
-      }
-    },
-    {
-      "id": "11",
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, message: 'Application draft created successfully', sanityId: $json.results[0].id, company: $('Receive Job Description').item.json.body.companyName, role: $('Receive Job Description').item.json.body.roleTitle, studioUrl: 'https://meljonesai.sanity.studio/structure/jobApplication;' + $json.results[0].id } }}"
+      },
       "type": "n8n-nodes-base.respondToWebhook",
-      "name": "Respond",
-      "parameters": {
-        "responseCode": 200,
-        "responseData": "={{ $json }}"
-      }
+      "typeVersion": 1.1,
+      "position": [750, 0],
+      "id": "respond-success",
+      "name": "Return Success"
     }
   ],
   "connections": {
-    "Webhook Trigger": {"main": [[{"node": "Validate Input", "type": "main", "index": 0}]]},
-    "Validate Input": {"main": [[{"node": "Company Research", "type": "main", "index": 0}]]},
-    "Company Research": {
-      "main": [[{"node": "Prepare Prompt (Structured)", "type": "main", "index": 0}]]
+    "Receive Job Description": {
+      "main": [
+        [{ "node": "Generate Introduction", "type": "main", "index": 0 }]
+      ]
     },
-    "Prepare Prompt (Structured)": {"main": [[{"node": "Call LLM", "type": "main", "index": 0}]]},
-    "Call LLM": {"main": [[{"node": "Parse AI Response", "type": "main", "index": 0}]]},
-    "Parse AI Response": {"main": [[{"node": "Generate Slug", "type": "main", "index": 0}]]},
-    "Generate Slug": {"main": [[{"node": "Map Project References", "type": "main", "index": 0}]]},
-    "Map Project References": {
-      "main": [[{"node": "Create Sanity Draft", "type": "main", "index": 0}]]
+    "Generate Introduction": {
+      "main": [
+        [{ "node": "Create Sanity Draft", "type": "main", "index": 0 }]
+      ]
     },
-    "Create Sanity Draft": {"main": [[{"node": "Format Response", "type": "main", "index": 0}]]},
-    "Format Response": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
+    "Create Sanity Draft": {
+      "main": [
+        [{ "node": "Return Success", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
   }
 }
