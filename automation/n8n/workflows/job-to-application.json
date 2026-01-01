@@ -17,18 +17,39 @@
     },
     {
       "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [200, 0],
+      "id": "wait-node",
+      "name": "Rate Limit Buffer"
+    },
+    {
+      "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=YOUR_GEMINI_API_KEY",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=YOUR_GEMINI_API_KEY",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: 'You are a Senior UX Strategist and Technical Copywriter creating content for a job application.\\n\\nCANDIDATE BACKGROUND:\\n- Core Skills: Next.js, TypeScript, Tailwind CSS, Performance optimization\\n- Product & CX: User Story Mapping, A/B Testing, Design Systems, Data-driven decisions\\n- AI & Automation: LLM API integration, n8n workflows, GitHub Actions\\n\\nKEY PROJECTS:\\n- P-01 Pivot Platform: Transformed near-zero user returns to active re-engagement\\n- P-02 Future-Proof Foundation: Saved 6+ months dev time with scalable Nuxt.js architecture\\n- P-03 Ops Autopilot: Eliminated manual job matching with automated recommendations\\n- P-04 Knowledge Transfer Engine: Reduced onboarding from weeks to 20 minutes\\n- P-05 Career Stories Platform: Building with AI tools (Claude/n8n) to accelerate development\\n\\nTARGET APPLICATION:\\nCompany: ' + $json.body.companyName + '\\nRole: ' + $json.body.roleTitle + '\\n\\nJob Description:\\n' + $json.body.jobDescription + '\\n\\nGenerate a compelling 3-sentence introduction paragraph that:\\n1. Opens with a hook showing understanding of the company\\'s specific needs\\n2. Positions the candidate as the solution with relevant experience\\n3. Hints at proven, measurable results\\n\\nTone: Professional, confident, metric-driven, slightly Australian-leaning.\\n\\nReturn ONLY the introduction paragraph, no additional text, headers, or formatting.' }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 500 } }) }}",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: `CONTEXT: You are generating personalised career narrative content for Mel Jones.\n\n## VOICE & TONE\nWrite as Mel — direct, confident, metric-driven, Australian spelling.\n- Radical directness. No hedging, no euphemisms.\n- Data grounds emotion, emotion drives data.\n- Short sentences when certain. Long when building.\n- NO: \"I think perhaps\", \"I believe\", \"Based on the job description\"\n- YES: \"Here's what I see...\", \"That's me.\", \"Let's talk.\"\n\n## SKILL MATRIX\n- Frontend: Next.js (App Router), TypeScript, Tailwind CSS, Core Web Vitals\n- Product & CX: User Story Mapping, A/B Testing, Design Systems, Stakeholder collaboration\n- AI & Automation: LLM API integration (Gemini, Anthropic), n8n workflows, GitHub Actions\n\n## PROJECT EVIDENCE\n| ID | Project | Metric |\n| P-01 | Pivot Platform | Transformed near-zero user returns to active re-engagement |\n| P-02 | Future-Proof Foundation | Saved 6+ months dev time with scalable Nuxt.js build |\n| P-03 | Ops Autopilot | Eliminated manual job matching; automated recommendations |\n| P-04 | Knowledge Transfer Engine | Reduced onboarding from weeks to 20 minutes |\n| P-05 | Career Stories Platform | 0→1 platform using Claude/n8n |\n\n## TASK\nGenerate content for this job application:\n\nCompany: ` + $('Receive Job Description').item.json.body.companyName + `\nRole: ` + $('Receive Job Description').item.json.body.roleTitle + `\n\nJob Description:\n` + $('Receive Job Description').item.json.body.jobDescription + `\n\n## OUTPUT FORMAT (JSON only, no markdown)\nReturn a valid JSON object with these exact fields:\n{\n  \"targetRoleTitle\": \"Tailored title showing Mel's value for this role\",\n  \"customIntroduction\": \"3 sentences max. Hook showing understanding of company needs. No preamble.\",\n  \"alignmentPoints\": [\n    { \"heading\": \"CX/Product strength\", \"body\": \"Impact statement with project reference (P-XX)\" },\n    { \"heading\": \"Another strength\", \"body\": \"Impact with project reference\" }\n  ],\n  \"closingStatement\": \"Single confident sentence prompting action. No hedging.\",\n  \"linkedProjects\": [\"P-01\"]\n}\n\nReturn ONLY the JSON object. No explanation, no markdown code fences.` }] }], generationConfig: { temperature: 0.7, responseMimeType: \"application/json\" } }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [250, 0],
+      "position": [400, 0],
       "id": "gemini-call",
-      "name": "Generate Introduction"
+      "name": "Generate Content"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst webhook = $('Receive Job Description').first().json;\nconst geminiText = response.candidates[0].content.parts[0].text;\n\n// Parse JSON from Gemini response\nlet content;\ntry {\n  content = JSON.parse(geminiText);\n} catch (e) {\n  // Try to extract JSON if wrapped in markdown\n  const match = geminiText.match(/\\{[\\s\\S]*\\}/);\n  content = match ? JSON.parse(match[0]) : { error: 'Could not parse response' };\n}\n\n// Build slug\nconst slug = webhook.body.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + webhook.body.roleTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-');\n\nreturn {\n  json: {\n    ...content,\n    targetCompany: webhook.body.companyName,\n    slug: slug,\n    _type: 'jobApplication',\n    _id: 'drafts.' + slug,\n    status: 'draft'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 0],
+      "id": "parse-response",
+      "name": "Parse Response"
     },
     {
       "parameters": {
@@ -39,51 +60,49 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer YOUR_SANITY_TOKEN"
+              "value": "Bearer YOUR_SANITY_TOKEN"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ mutations: [{ createOrReplace: { _type: 'jobApplication', _id: 'drafts.' + $('Receive Job Description').item.json.body.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + $('Receive Job Description').item.json.body.roleTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), targetCompany: $('Receive Job Description').item.json.body.companyName, targetRoleTitle: $('Receive Job Description').item.json.body.roleTitle, customIntroduction: $json.candidates[0].content.parts[0].text, status: 'draft', slug: { _type: 'slug', current: $('Receive Job Description').item.json.body.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + $('Receive Job Description').item.json.body.roleTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }, createdAt: new Date().toISOString() } }] }) }}",
+        "jsonBody": "={{ JSON.stringify({ mutations: [{ createOrReplace: { _type: $json._type, _id: $json._id, targetCompany: $json.targetCompany, targetRoleTitle: $json.targetRoleTitle, customIntroduction: $json.customIntroduction, alignmentPoints: $json.alignmentPoints, closingStatement: $json.closingStatement, status: $json.status, slug: { _type: 'slug', current: $json.slug } } }] }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [500, 0],
+      "position": [800, 0],
       "id": "sanity-create",
       "name": "Create Sanity Draft"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { success: true, message: 'Application draft created successfully', sanityId: $json.results[0].id, company: $('Receive Job Description').item.json.body.companyName, role: $('Receive Job Description').item.json.body.roleTitle, studioUrl: 'https://meljonesai.sanity.studio/structure/jobApplication;' + $json.results[0].id } }}"
+        "responseBody": "={{ { success: true, message: 'Draft created', sanityId: $json.results[0].id, company: $('Parse Response').first().json.targetCompany, role: $('Parse Response').first().json.targetRoleTitle, studioUrl: 'https://meljonesai.sanity.studio/structure/jobApplication;' + $json.results[0].id } }}"
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [750, 0],
+      "position": [1000, 0],
       "id": "respond-success",
       "name": "Return Success"
     }
   ],
   "connections": {
     "Receive Job Description": {
-      "main": [
-        [{ "node": "Generate Introduction", "type": "main", "index": 0 }]
-      ]
+      "main": [[{ "node": "Rate Limit Buffer", "type": "main", "index": 0 }]]
     },
-    "Generate Introduction": {
-      "main": [
-        [{ "node": "Create Sanity Draft", "type": "main", "index": 0 }]
-      ]
+    "Rate Limit Buffer": {
+      "main": [[{ "node": "Generate Content", "type": "main", "index": 0 }]]
+    },
+    "Generate Content": {
+      "main": [[{ "node": "Parse Response", "type": "main", "index": 0 }]]
+    },
+    "Parse Response": {
+      "main": [[{ "node": "Create Sanity Draft", "type": "main", "index": 0 }]]
     },
     "Create Sanity Draft": {
-      "main": [
-        [{ "node": "Return Success", "type": "main", "index": 0 }]
-      ]
+      "main": [[{ "node": "Return Success", "type": "main", "index": 0 }]]
     }
   },
-  "settings": {
-    "executionOrder": "v1"
-  }
+  "settings": { "executionOrder": "v1" }
 }
