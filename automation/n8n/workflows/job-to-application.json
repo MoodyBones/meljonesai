@@ -78,7 +78,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { success: true, message: 'Draft created', sanityId: $json.results[0].id, company: $('Parse Response').first().json.targetCompany, role: $('Parse Response').first().json.targetRoleTitle, studioUrl: 'http://localhost:3333/structure/jobApplication;' + $json.results[0].id } }}"
+        "responseBody": "={{ { success: true, message: 'Draft created', sanityId: $json.results[0].id, company: $('Parse Response').first().json.targetCompany, role: $('Parse Response').first().json.targetRoleTitle, studioUrl: 'https://meljonesai.sanity.studio/structure/jobApplication;' + $json.results[0].id } }}"
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
