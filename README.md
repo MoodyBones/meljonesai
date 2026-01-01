@@ -2,8 +2,8 @@
 
 **A career storytelling platform** that transforms job applications into personalised, portfolio-worthy pages.
 
-[![Phase](https://img.shields.io/badge/Phase_1-MVP-blue)]()
-[![Status](https://img.shields.io/badge/Status-In_Progress-yellow)]()
+[![Phase](https://img.shields.io/badge/Phase_2-Scale-green)]()
+[![Status](https://img.shields.io/badge/Status-Deployed-brightgreen)]()
 
 ---
 
@@ -153,49 +153,38 @@ Portfolio projects referenced by applications:
 
 ## Milestones
 
-### Phase 1: MVP
-
 | Milestone | Description | Status |
 |-----------|-------------|--------|
 | M1 | Firebase Authentication | ✅ Complete |
-| M3 | Sanity Schemas | 🎯 In Progress |
-| M6a | Deploy MVP (one page) | Pending |
+| M3 | Sanity Schemas | ✅ Complete |
+| M2 | n8n Workflow | ✅ Complete |
+| M4 | Admin Interface | ✅ Complete |
+| M5 | Content Generation Testing | In Progress |
+| M6 | Production Deployment | ✅ Deployed |
 
-### Phase 2: Scale
-
-| Milestone | Description | Status |
-|-----------|-------------|--------|
-| M2 | n8n Workflow | Planned |
-| M4 | Admin Interface | Planned |
-| M5 | Content Generation Testing | Planned |
-| M6b | Full Production Deployment | Planned |
-
-**Critical Path (Phase 1):** M1 → M3 → M6a
+**Live:** [meljonesai.netlify.app](https://meljonesai.netlify.app) · [Sanity Studio](https://meljonesai.sanity.studio)
 
 ---
 
-## Documentation
+## Key Files
 
-| Document | Purpose |
-|----------|---------|
-| [docs/README.md](docs/README.md) | Documentation overview |
-| [docs/QUICKSTART.md](docs/QUICKSTART.md) | Setup guide |
-| [docs/REFERENCE.md](docs/REFERENCE.md) | Architecture & milestones |
-| [docs/CHANGES.md](docs/CHANGES.md) | Session history |
+| File | Purpose |
+|------|---------|
+| `.gemini/CONTEXT_CONTENT_GEN.md` | Voice & tone guidelines for AI generation |
+| `automation/n8n/workflows/` | Versioned n8n workflow JSON |
+| `sanity-studio/schemaTypes/` | Sanity document schemas |
 
 ---
 
-## MVP Success Criteria
+## Success Criteria
 
-**Phase 1 Definition of Done:**
-
-- [ ] Sanity schemas implemented and validated
-- [ ] One application with manually curated content
-- [ ] Public page renders at `/[slug]`
+- [x] Sanity schemas implemented
+- [x] Firebase auth working
+- [x] n8n workflow generating content
+- [x] Admin forms for job/project input
+- [x] Deployed to Netlify
 - [ ] Lighthouse accessibility score >= 90
-- [ ] Works on mobile Safari
-- [ ] OG image renders correctly when shared
-- [ ] Deployed to production URL
+- [ ] OG image renders correctly
 
 ---
 
