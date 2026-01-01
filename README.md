@@ -19,36 +19,6 @@ Each application page is generated from structured content: your research about 
 
 ---
 
-## Two-Phase Approach
-
-### Phase 1: MVP (Current)
-
-**Goal:** One polished, publicly-accessible application page.
-
-```
-Research Company → Curate Content in Sanity → Publish → Live Page
-```
-
-- Manually curate content using structured schema
-- Schema designed as a *thinking tool* (research context informs output)
-- Ship craft, demonstrate systems thinking
-
-### Phase 2: Scale (Future)
-
-**Goal:** Automate content generation for multiple applications.
-
-```
-Admin Form → n8n Workflow → Gemini AI → Sanity Draft → Review → Publish
-```
-
-- Same schema, automated population
-- n8n workflow with company research + AI generation
-- Human review before publishing
-
-**The schema serves both phases.** What you curate manually in Phase 1, automation fills in Phase 2.
-
----
-
 ## Tech Stack
 
 | Layer | Technology |
@@ -56,8 +26,8 @@ Admin Form → n8n Workflow → Gemini AI → Sanity Draft → Review → Publis
 | **Frontend** | Next.js 15, React 19, TypeScript, Tailwind CSS v4 |
 | **CMS** | Sanity Studio v4 (headless) |
 | **Auth** | Firebase Authentication |
-| **Automation** | n8n + Gemini 2.0 Flash (Phase 2) |
-| **Deployment** | Hostinger VPS |
+| **Automation** | n8n + Gemini 2.5 Flash |
+| **Deployment** | Netlify |
 
 ---
 
@@ -67,8 +37,8 @@ Admin Form → n8n Workflow → Gemini AI → Sanity Draft → Review → Publis
 meljonesai/
 ├── web/                # Next.js application
 ├── sanity-studio/      # Sanity CMS
-├── docs/               # Documentation
-└── .github/            # CI/CD, issue templates, copilot instructions
+├── automation/         # n8n workflows
+└── .gemini/            # AI context documents
 ```
 
 ---
@@ -115,42 +85,6 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
 
 ---
 
-## Content Model
-
-### Job Application
-
-The schema structures your thinking before generating content:
-
-**Research Context (inputs):**
-- Company pain points you can address
-- Role-specific keywords from the JD
-- Your proof points with evidence
-- Tone adjustments for company culture
-
-**Content (outputs):**
-- Custom introduction tailored to company
-- Alignment points showing role fit
-- Linked portfolio projects (max 3)
-- Closing statement
-
-**Lifecycle:**
-```
-draft → in-review → ready → published → archived
-        ↑
-    ai-generated (Phase 2)
-```
-
-### Project
-
-Portfolio projects referenced by applications:
-
-- Project ID (P-01, P-02, etc.)
-- Name, focus area, key metric
-- Technologies and skills applied
-- Description
-
----
-
 ## Milestones
 
 | Milestone | Description | Status |
@@ -185,18 +119,6 @@ Portfolio projects referenced by applications:
 - [x] Deployed to Netlify
 - [ ] Lighthouse accessibility score >= 90
 - [ ] OG image renders correctly
-
----
-
-## The Strategic Frame
-
-This project serves three purposes:
-
-1. **Immediate utility** — A polished application page to link to
-2. **Portfolio evidence** — Demonstrates craft, systems thinking, shipping discipline
-3. **Interview material** — Concrete example for "tell me about a recent project"
-
-The automation story (Phase 2) stays ready. If asked about scale or future plans, the n8n architecture is scoped. But Phase 1 shows restraint—build what's needed, not what's cool.
 
 ---
 
