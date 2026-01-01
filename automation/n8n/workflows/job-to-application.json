@@ -43,7 +43,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst webhook = $('Receive Job Description').first().json;\nconst geminiText = response.candidates[0].content.parts[0].text;\n\n// Parse JSON from Gemini response\nlet content;\ntry {\n  content = JSON.parse(geminiText);\n} catch (e) {\n  // Try to extract JSON if wrapped in markdown\n  const match = geminiText.match(/\\{[\\s\\S]*\\}/);\n  content = match ? JSON.parse(match[0]) : { error: 'Could not parse response' };\n}\n\n// Build slug\nconst slug = webhook.body.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + webhook.body.roleTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-');\n\nreturn {\n  json: {\n    ...content,\n    targetCompany: webhook.body.companyName,\n    slug: slug,\n    _type: 'jobApplication',\n    _id: 'drafts.' + slug,\n    status: 'draft'\n  }\n};"
+        "jsCode": "const response = $input.first().json;\nconst webhook = $('Receive Job Description').first().json;\nconst geminiText = response.candidates[0].content.parts[0].text;\n\n// Parse JSON from Gemini response\nlet content;\ntry {\n  content = JSON.parse(geminiText);\n} catch (e) {\n  const match = geminiText.match(/\\{[\\s\\S]*\\}/);\n  content = match ? JSON.parse(match[0]) : { error: 'Could not parse response' };\n}\n\n// Build UNIQUE slug with timestamp\nconst timestamp = Date.now().toString(36);\nconst baseSlug = webhook.body.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + webhook.body.roleTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-');\nconst slug = baseSlug + '-' + timestamp;\n\n// Ensure alignmentPoints have _key values\nconst alignmentPoints = (content.alignmentPoints || []).map((pt, i) => ({\n  _key: 'ap' + i + timestamp,\n  heading: pt.heading || '',\n  body: pt.body || ''\n}));\n\nreturn {\n  json: {\n    targetCompany: webhook.body.companyName,\n    targetRoleTitle: content.targetRoleTitle || webhook.body.roleTitle,\n    customIntroduction: content.customIntroduction || '',\n    alignmentPoints: alignmentPoints,\n    closingStatement: content.closingStatement || '',\n    slug: slug,\n    _type: 'jobApplication',\n    _id: 'drafts.' + slug,\n    status: 'draft'\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -78,7 +78,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { success: true, message: 'Draft created', sanityId: $json.results[0].id, company: $('Parse Response').first().json.targetCompany, role: $('Parse Response').first().json.targetRoleTitle, studioUrl: 'https://meljonesai.sanity.studio/structure/jobApplication;' + $json.results[0].id } }}"
+        "responseBody": "={{ { success: true, message: 'Draft created', sanityId: $json.results[0].id, company: $('Parse Response').first().json.targetCompany, role: $('Parse Response').first().json.targetRoleTitle, studioUrl: 'http://localhost:3333/structure/jobApplication;' + $json.results[0].id } }}"
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
