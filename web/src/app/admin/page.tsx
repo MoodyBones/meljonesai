@@ -46,45 +46,90 @@ export default function AdminPage() {
       router.push('/login')
     } catch (error) {
       console.error('Sign out error:', error)
-      // TODO: Show error toast to user
     }
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p>Loading...</p>
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center">
+        <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto bg-white rounded shadow p-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Admin Dashboard</h1>
-          <button 
-            onClick={handleSignOut} 
-            className="text-sm text-red-600 hover:text-red-800"
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 p-8">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+              Dashboard
+            </h1>
+            {user && (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                {user.name || user.email}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={handleSignOut}
+            className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
           >
             Sign Out
           </button>
         </div>
 
-        {user && (
-          <div className="mt-6">
-            <p className="text-sm text-gray-700">Signed in as</p>
-            <p className="font-medium">{user.name || user.email}</p>
-          </div>
-        )}
-
-        <div className="mt-6">
-          <Link 
-            href="/admin/new" 
-            className="inline-block bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+        {/* Navigation Cards */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/admin/job"
+            className="block p-6 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors"
           >
-            New Application
+            <div className="text-2xl mb-2">📝</div>
+            <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
+              New Job Application
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+              Generate personalised application content from a job description
+            </p>
           </Link>
+
+          <Link
+            href="/admin/project"
+            className="block p-6 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors"
+          >
+            <div className="text-2xl mb-2">🛠️</div>
+            <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
+              New Project
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+              Add a new project to your portfolio evidence
+            </p>
+          </Link>
+        </div>
+
+        {/* Quick Links */}
+        <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-zinc-700">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">Quick links</p>
+          <div className="flex gap-4 text-sm">
+            <a
+              href="https://meljonesai.sanity.studio/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Sanity Studio
+            </a>
+            <a
+              href="https://n8n.goodsomeday.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              n8n Workflows
+            </a>
+          </div>
         </div>
       </div>
     </div>
