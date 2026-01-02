@@ -11,10 +11,14 @@ type AdminUser = {
   name: string | null
 }
 
+type ProfileBuildState = 'idle' | 'building' | 'success' | 'error'
+
 export default function AdminPage() {
   const router = useRouter()
   const [user, setUser] = useState<AdminUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [profileBuildState, setProfileBuildState] = useState<ProfileBuildState>('idle')
+  const [profileBuildResult, setProfileBuildResult] = useState<string | null>(null)
 
   useEffect(() => {
     if (!auth) {
@@ -46,6 +50,28 @@ export default function AdminPage() {
       router.push('/login')
     } catch (error) {
       console.error('Sign out error:', error)
+    }
+  }
+
+  async function handleRebuildProfile() {
+    setProfileBuildState('building')
+    setProfileBuildResult(null)
+
+    try {
+      const response = await fetch('https://n8n.goodsomeday.com/webhook/build-profile', {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setProfileBuildState('success')
+      setProfileBuildResult(`Found ${data.capabilitiesFound} capabilities`)
+    } catch (error) {
+      setProfileBuildState('error')
+      setProfileBuildResult(error instanceof Error ? error.message : 'Unknown error')
     }
   }
 
@@ -91,7 +117,7 @@ export default function AdminPage() {
               New Job Application
             </h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              Generate personalised application content from a job description
+              Match a job and generate personalised application content
             </p>
           </Link>
 
@@ -107,6 +133,37 @@ export default function AdminPage() {
               Add a new project to your portfolio evidence
             </p>
           </Link>
+        </div>
+
+        {/* Profile Builder */}
+        <div className="mt-4">
+          <button
+            onClick={handleRebuildProfile}
+            disabled={profileBuildState === 'building'}
+            className="w-full p-6 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl mb-2">🔄</div>
+                <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
+                  {profileBuildState === 'building' ? 'Analysing...' : 'Rebuild Profile'}
+                </h2>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                  Re-analyse projects and update AI-derived capabilities
+                </p>
+              </div>
+              {profileBuildState === 'success' && (
+                <span className="text-green-600 dark:text-green-400 text-sm">
+                  {profileBuildResult}
+                </span>
+              )}
+              {profileBuildState === 'error' && (
+                <span className="text-red-600 dark:text-red-400 text-sm">
+                  {profileBuildResult}
+                </span>
+              )}
+            </div>
+          </button>
         </div>
 
         {/* Quick Links */}

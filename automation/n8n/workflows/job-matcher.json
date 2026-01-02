@@ -1,0 +1,226 @@
+{
+  "name": "Job Matcher (Agent 2)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "match-job",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "webhook-trigger",
+      "name": "Receive Job",
+      "webhookId": "match-job"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://psf3aj1o.api.sanity.io/v2024-01-01/data/query/production",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "*[_type == \"profile\"][0]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0],
+      "id": "fetch-profile",
+      "name": "Fetch Profile"
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [400, 0],
+      "id": "wait-node",
+      "name": "Rate Limit Buffer"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=YOUR_GEMINI_API_KEY",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: `# Agent 2: Job Matcher\n\nCompare this job against the candidate profile. Determine fit and generate content or explain rejection.\n\n## CANDIDATE PROFILE\n${JSON.stringify($('Fetch Profile').first().json.result, null, 2)}\n\n## JOB TO MATCH\nCompany: ${$('Receive Job').first().json.body.companyName}\nRole: ${$('Receive Job').first().json.body.roleTitle}\nURL: ${$('Receive Job').first().json.body.jobUrl || 'Not provided'}\n\nJob Description:\n${$('Receive Job').first().json.body.jobDescription}\n\n## MATCHING PROCESS\n1. Check dealBreakers - if any match job signals, REJECT immediately\n2. Check requirements - if job doesn't meet candidate's must-haves, flag as gap\n3. Match provenCapabilities against job requirements\n4. Score: 70%+ = MATCH, 40-70% = PARTIAL, <40% or dealBreaker = REJECT\n\n## OUTPUT FORMAT (JSON only)\n\nFor MATCH or PARTIAL:\n{\n  \"matchCategory\": \"match\" or \"partial\",\n  \"matchScore\": 0-100,\n  \"gaps\": [\n    { \"requirement\": \"What job asks\", \"gap\": \"What's missing\", \"reframe\": \"How to position it\" }\n  ],\n  \"content\": {\n    \"targetRoleTitle\": \"Tailored title\",\n    \"customIntroduction\": \"3 sentences max, no preamble\",\n    \"alignmentPoints\": [\n      { \"heading\": \"Strength area\", \"body\": \"Impact + project reference\" }\n    ],\n    \"closingStatement\": \"Single confident sentence. 'Let's talk.' not 'I would welcome...'\"\n  }\n}\n\nFor REJECT:\n{\n  \"matchCategory\": \"reject\",\n  \"matchScore\": 0-100,\n  \"reason\": \"Clear explanation of why this doesn't fit\",\n  \"dealBreakersTriggered\": [\"Which ones if any\"],\n  \"requirementsNotMet\": [\"Which ones if any\"],\n  \"notNow\": true/false\n}\n\nUse voiceNotes for tone. Australian spelling. Be honest - a good rejection beats a weak application.\nReturn ONLY the JSON object.` }] }], generationConfig: { temperature: 0.7, responseMimeType: \"application/json\" } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, 0],
+      "id": "gemini-call",
+      "name": "Match with Gemini"
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiResponse = $input.first().json;\nconst webhook = $('Receive Job').first().json;\nconst profile = $('Fetch Profile').first().json.result;\nconst geminiText = geminiResponse.candidates[0].content.parts[0].text;\n\n// Parse Gemini response\nlet result;\ntry {\n  result = JSON.parse(geminiText);\n} catch (e) {\n  const match = geminiText.match(/\\{[\\s\\S]*\\}/);\n  result = match ? JSON.parse(match[0]) : { matchCategory: 'reject', reason: 'Could not parse response' };\n}\n\nconst timestamp = Date.now().toString(36);\nconst baseSlug = webhook.body.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + webhook.body.roleTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-');\n\nreturn {\n  json: {\n    matchCategory: result.matchCategory,\n    matchScore: result.matchScore || 0,\n    gaps: result.gaps || [],\n    content: result.content || null,\n    reason: result.reason || null,\n    dealBreakersTriggered: result.dealBreakersTriggered || [],\n    requirementsNotMet: result.requirementsNotMet || [],\n    notNow: result.notNow || false,\n    // For Sanity document\n    slug: baseSlug + '-' + timestamp,\n    company: webhook.body.companyName,\n    role: webhook.body.roleTitle,\n    jobUrl: webhook.body.jobUrl || null,\n    profileId: profile?._id || null\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 0],
+      "id": "parse-response",
+      "name": "Parse Response"
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+                "combinator": "and",
+                "conditions": [
+                  { "id": "match", "leftValue": "={{ $json.matchCategory }}", "rightValue": "match", "operator": { "type": "string", "operation": "equals" } }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "MATCH"
+            },
+            {
+              "conditions": {
+                "options": { "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+                "combinator": "and",
+                "conditions": [
+                  { "id": "partial", "leftValue": "={{ $json.matchCategory }}", "rightValue": "partial", "operator": { "type": "string", "operation": "equals" } }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "PARTIAL"
+            },
+            {
+              "conditions": {
+                "options": { "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+                "combinator": "and",
+                "conditions": [
+                  { "id": "reject", "leftValue": "={{ $json.matchCategory }}", "rightValue": "reject", "operator": { "type": "string", "operation": "equals" } }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "REJECT"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [1000, 0],
+      "id": "switch-category",
+      "name": "Branch by Category"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://psf3aj1o.api.sanity.io/v2024-01-01/data/mutate/production",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Authorization", "value": "Bearer YOUR_SANITY_TOKEN" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ mutations: [{ createOrReplace: { _type: 'jobApplication', _id: 'drafts.' + $json.slug, targetCompany: $json.company, targetRoleTitle: $json.content?.targetRoleTitle || $json.role, jobUrl: $json.jobUrl, matchCategory: $json.matchCategory, matchScore: $json.matchScore, gaps: ($json.gaps || []).map((g, i) => ({ _key: 'gap' + i + Date.now().toString(36), ...g })), customIntroduction: $json.content?.customIntroduction || '', alignmentPoints: ($json.content?.alignmentPoints || []).map((ap, i) => ({ _key: 'ap' + i + Date.now().toString(36), heading: ap.heading, body: ap.body })), closingStatement: $json.content?.closingStatement || '', status: 'draft', slug: { _type: 'slug', current: $json.slug } } }] }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, -100],
+      "id": "sanity-create-match",
+      "name": "Create Application (MATCH)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://psf3aj1o.api.sanity.io/v2024-01-01/data/mutate/production",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Authorization", "value": "Bearer YOUR_SANITY_TOKEN" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ mutations: [{ createOrReplace: { _type: 'jobApplication', _id: 'drafts.' + $json.slug, targetCompany: $json.company, targetRoleTitle: $json.content?.targetRoleTitle || $json.role, jobUrl: $json.jobUrl, matchCategory: $json.matchCategory, matchScore: $json.matchScore, gaps: ($json.gaps || []).map((g, i) => ({ _key: 'gap' + i + Date.now().toString(36), requirement: g.requirement, gap: g.gap, reframe: g.reframe })), customIntroduction: $json.content?.customIntroduction || '', alignmentPoints: ($json.content?.alignmentPoints || []).map((ap, i) => ({ _key: 'ap' + i + Date.now().toString(36), heading: ap.heading, body: ap.body })), closingStatement: $json.content?.closingStatement || '', yourNotes: 'PARTIAL MATCH - Review gaps before publishing', status: 'draft', slug: { _type: 'slug', current: $json.slug } } }] }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 0],
+      "id": "sanity-create-partial",
+      "name": "Create Application (PARTIAL)"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, matchCategory: 'match', matchScore: $('Parse Response').first().json.matchScore, company: $('Parse Response').first().json.company, role: $('Parse Response').first().json.role, studioUrl: 'https://meljonesai.sanity.studio/structure/jobApplication;drafts.' + $('Parse Response').first().json.slug } }}"
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1400, -100],
+      "id": "respond-match",
+      "name": "Return MATCH"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, matchCategory: 'partial', matchScore: $('Parse Response').first().json.matchScore, gaps: $('Parse Response').first().json.gaps, company: $('Parse Response').first().json.company, role: $('Parse Response').first().json.role, studioUrl: 'https://meljonesai.sanity.studio/structure/jobApplication;drafts.' + $('Parse Response').first().json.slug, message: 'Review gaps before publishing' } }}"
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1400, 0],
+      "id": "respond-partial",
+      "name": "Return PARTIAL"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, matchCategory: 'reject', matchScore: $json.matchScore, reason: $json.reason, dealBreakersTriggered: $json.dealBreakersTriggered, requirementsNotMet: $json.requirementsNotMet, notNow: $json.notNow, company: $json.company, role: $json.role, message: 'No application created' } }}"
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1200, 100],
+      "id": "respond-reject",
+      "name": "Return REJECT"
+    }
+  ],
+  "connections": {
+    "Receive Job": {
+      "main": [[{ "node": "Fetch Profile", "type": "main", "index": 0 }]]
+    },
+    "Fetch Profile": {
+      "main": [[{ "node": "Rate Limit Buffer", "type": "main", "index": 0 }]]
+    },
+    "Rate Limit Buffer": {
+      "main": [[{ "node": "Match with Gemini", "type": "main", "index": 0 }]]
+    },
+    "Match with Gemini": {
+      "main": [[{ "node": "Parse Response", "type": "main", "index": 0 }]]
+    },
+    "Parse Response": {
+      "main": [[{ "node": "Branch by Category", "type": "main", "index": 0 }]]
+    },
+    "Branch by Category": {
+      "main": [
+        [{ "node": "Create Application (MATCH)", "type": "main", "index": 0 }],
+        [{ "node": "Create Application (PARTIAL)", "type": "main", "index": 0 }],
+        [{ "node": "Return REJECT", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Application (MATCH)": {
+      "main": [[{ "node": "Return MATCH", "type": "main", "index": 0 }]]
+    },
+    "Create Application (PARTIAL)": {
+      "main": [[{ "node": "Return PARTIAL", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}
