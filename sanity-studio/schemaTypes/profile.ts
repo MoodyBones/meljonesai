@@ -49,7 +49,13 @@ export default defineType({
       group: 'human',
       description: 'Guidance for content generation',
       fields: [
-        {name: 'tone', title: 'Tone', type: 'string', description: 'e.g., "Direct, Australian, metric-backed"'},
+        {
+          name: 'tone',
+          title: 'Tone',
+          type: 'string',
+          description: 'e.g., "Direct, Australian, metric-backed"',
+          validation: (Rule) => Rule.required(),
+        },
         {name: 'framing', title: 'Framing', type: 'string', description: 'e.g., "Pattern observer, systems thinker"'},
         {
           name: 'avoid',
@@ -134,8 +140,8 @@ export default defineType({
       description: '2-3 sentence synthesis of patterns across projects.',
     }),
     defineField({
-      name: 'lastAnalysed',
-      title: 'Last Analysed',
+      name: 'lastAnalyzed',
+      title: 'Last Analyzed',
       type: 'datetime',
       group: 'ai',
       description: 'Timestamp of last Agent 1 run.',
@@ -152,14 +158,14 @@ export default defineType({
   preview: {
     select: {
       title: 'name',
-      lastAnalysed: 'lastAnalysed',
+      lastAnalyzed: 'lastAnalyzed',
     },
-    prepare({title, lastAnalysed}) {
+    prepare({title, lastAnalyzed}) {
       return {
         title: title || 'Unnamed Profile',
-        subtitle: lastAnalysed
-          ? `Analysed: ${new Date(lastAnalysed).toLocaleDateString()}`
-          : 'Not yet analysed',
+        subtitle: lastAnalyzed
+          ? `Analyzed: ${new Date(lastAnalyzed).toLocaleDateString()}`
+          : 'Not yet analyzed',
       }
     },
   },
