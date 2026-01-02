@@ -17,7 +17,20 @@ You are comparing a job description against a candidate profile to determine fit
 
 You will receive:
 - **Job description** (text or URL content)
-- **Profile** (JSON from Agent 1)
+- **Profile** (complete document with human + AI fields)
+
+### Profile Fields to Check
+
+**Human-authored (candidate's requirements):**
+- `values` — What they need from work
+- `dealBreakers` — Hard no's (auto-reject if matched)
+- `requirements` — Must-haves for any role (e.g., "Remote or hybrid")
+- `voiceNotes` — Tone, framing, things to avoid
+
+**AI-derived (capabilities):**
+- `provenCapabilities` — What they've demonstrated
+- `differentiators` — What sets them apart
+- `growthEdges` — Areas with thinner evidence
 
 ---
 
@@ -46,19 +59,35 @@ Parse the job description to identify:
 
 ## Step 2: Compare Against Profile
 
-For each requirement, check:
+### 2a. Check Deal Breakers (auto-reject)
+
+Compare job signals against `dealBreakers`. If any match → REJECT immediately.
+
+Examples:
+- Job mentions "fast-paced startup" + dealBreaker "Always-on expectations" → Check carefully
+- Job mentions "open plan office required" + dealBreaker "Surveillance-style management" → Possible reject
+
+### 2b. Check Requirements (candidate's must-haves)
+
+Compare job against `requirements`. If not met → flag in gaps.
+
+Examples:
+- Requirement "Remote or hybrid" + job is "fully onsite" → Major gap
+- Requirement "IC or lead" + job is "middle management" → Mismatch
+
+### 2c. Match Capabilities
+
+For each job requirement, check `provenCapabilities`:
 - Does the profile have a matching capability?
 - What's the evidence strength (high/medium/emerging)?
-- Are there any deal-breaker conflicts?
-- Do values align?
 
 Build a comparison table:
 
-| Requirement | Profile Match | Evidence | Gap? |
-|-------------|---------------|----------|------|
+| Job Requirement | Profile Match | Evidence | Gap? |
+|-----------------|---------------|----------|------|
 | "5 years React" | Next.js, App Router | P-02, P-05 | Reframe |
-| "Design Systems" | Design Systems | P-02, P-04 | None |
-| "Startup pace" | Deal breaker? | - | Check values |
+| "Design Systems" | Design Systems (high) | P-02, P-04 | None |
+| "Onsite Sydney" | Requirement: "Remote" | - | Major gap |
 
 ---
 
@@ -144,10 +173,11 @@ Set `notNow: true` if the role might fit in future (skill gap), `false` if it's 
 
 When generating content (MATCH or PARTIAL), follow these rules:
 
-### Voice
-- Direct, confident, metric-driven
-- No hedging: "I think perhaps..." → "Here's what I see..."
-- Australian spelling
+### Voice (use profile.voiceNotes)
+- Use the tone from `voiceNotes.tone`
+- Apply framing from `voiceNotes.framing`
+- **Avoid** everything in `voiceNotes.avoid`
+- Australian spelling throughout
 
 ### Custom Introduction
 - 3 sentences maximum
