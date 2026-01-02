@@ -2,7 +2,7 @@
 set -euo pipefail
 echo "Checking environment for required secrets..."
 missing=""
-for v in SANITY_PREVIEW_SECRET NEXT_PUBLIC_SITE_URL SANITY_WRITE_TOKEN ANTHROPIC_API_KEY N8N_WEBHOOK_SECRET; do
+for v in SANITY_PREVIEW_SECRET NEXT_PUBLIC_SITE_URL SANITY_WRITE_TOKEN; do
   if [ -z "${!v:-}" ]; then
     missing="$missing $v"
   fi

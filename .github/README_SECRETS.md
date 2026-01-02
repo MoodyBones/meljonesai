@@ -9,7 +9,13 @@ Required secrets for full CI (Playwright auth minting)
 - FIREBASE_PROJECT_ID (string): Your Firebase project ID.
 - NEXT_PUBLIC_FIREBASE_API_KEY (string): Your Firebase Web API key (found in Firebase Console → Project Settings → General).
 
-Optional / related secrets used by web CI
+Required secrets for Sanity preview and CI
+
+- SANITY_PREVIEW_SECRET (string): Secret for Sanity preview mode
+- NEXT_PUBLIC_SITE_URL (string): Public URL of the site, e.g. `https://curate-company-content.netlify.app/`
+- SANITY_WRITE_TOKEN (string): Sanity write token for mutations
+
+Optional Firebase config secrets
 
 - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
 - NEXT_PUBLIC_FIREBASE_PROJECT_ID
@@ -17,11 +23,8 @@ Optional / related secrets used by web CI
 - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 - NEXT_PUBLIC_FIREBASE_APP_ID
 - NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
-- SANITY_PREVIEW_SECRET
-- NEXT_PUBLIC_SITE_URL
-- SANITY_WRITE_TOKEN
-- ANTHROPIC_API_KEY
-- N8N_WEBHOOK_SECRET
+
+Note: This project uses Gemini for AI (via n8n workflows), not Anthropic. API keys for Gemini are stored directly in n8n, not as GitHub secrets.
 
 How CI uses these secrets
 
