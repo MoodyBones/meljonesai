@@ -6,6 +6,7 @@ export default defineType({
   type: 'document',
   groups: [
     {name: 'target', title: 'Target Role'},
+    {name: 'match', title: 'Match Analysis'},
     {name: 'research', title: 'Research Context'},
     {name: 'content', title: 'Content'},
     {name: 'meta', title: 'Metadata'},
@@ -46,7 +47,59 @@ export default defineType({
       description: 'Link to original job posting',
     }),
 
-    // === RESEARCH CONTEXT (NEW - for input curation) ===
+    // === MATCH ANALYSIS (from Agent 2) ===
+    defineField({
+      name: 'matchCategory',
+      title: 'Match Category',
+      type: 'string',
+      group: 'match',
+      options: {
+        list: [
+          {title: 'Match (70%+)', value: 'match'},
+          {title: 'Partial (40-70%)', value: 'partial'},
+          {title: 'Reject (<40%)', value: 'reject'},
+        ],
+      },
+      description: 'Agent 2 match assessment',
+    }),
+    defineField({
+      name: 'matchScore',
+      title: 'Match Score',
+      type: 'number',
+      group: 'match',
+      description: 'Percentage match (0-100)',
+      validation: (Rule) => Rule.min(0).max(100),
+    }),
+    defineField({
+      name: 'gaps',
+      title: 'Gaps',
+      type: 'array',
+      group: 'match',
+      of: [
+        {
+          type: 'object',
+          fields: [
+            {name: 'requirement', title: 'Requirement', type: 'string'},
+            {name: 'gap', title: 'Gap', type: 'string'},
+            {name: 'reframe', title: 'Reframe Suggestion', type: 'text'},
+          ],
+          preview: {
+            select: {title: 'requirement', subtitle: 'gap'},
+          },
+        },
+      ],
+      description: 'Requirements where evidence is thin (for partial matches)',
+    }),
+    defineField({
+      name: 'profileRef',
+      title: 'Profile Used',
+      type: 'reference',
+      to: [{type: 'profile'}],
+      group: 'match',
+      description: 'The profile used for matching',
+    }),
+
+    // === RESEARCH CONTEXT (for input curation) ===
     defineField({
       name: 'researchContext',
       title: 'Research Context',
