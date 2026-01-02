@@ -1,21 +1,36 @@
 # MelJonesAI
 
-**A career storytelling platform** that transforms job applications into personalised, portfolio-worthy pages.
+**A career storytelling platform** that transforms job applications into personalised, portfolio-worthy pages using a two-agent AI architecture.
 
-[![Phase](https://img.shields.io/badge/Phase_2-Scale-green)]()
 [![Status](https://img.shields.io/badge/Status-Deployed-brightgreen)]()
+
+**Live:** [curate-company-content.netlify.app](https://curate-company-content.netlify.app) · [Sanity Studio](https://meljonesai.sanity.studio)
 
 ---
 
-## What This Is
+## How It Works
 
-A **personalised content architecture** that demonstrates:
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Agent 1: Profile Builder                                   │
+│  POST /webhook/build-profile                                │
+│                                                             │
+│  Projects → Gemini Analysis → Patch Profile                 │
+│  (generates AI-derived fields, preserves human-authored)   │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Agent 2: Job Matcher                                       │
+│  POST /webhook/match-job                                    │
+│                                                             │
+│  Job + Profile → Gemini Matching → Branch                   │
+│     ├── MATCH (70%+)   → Create application                 │
+│     ├── PARTIAL (40-70%) → Create with gaps noted           │
+│     └── REJECT (<40%)  → Return explanation only            │
+└─────────────────────────────────────────────────────────────┘
+```
 
-1. **Craft under constraint** — Ship something polished within a tight scope
-2. **Systems thinking** — Structure data to enable both manual curation and future automation
-3. **Judgment** — Make good tradeoffs, don't over-engineer
-
-Each application page is generated from structured content: your research about the company, proof points mapped to role requirements, and curated project references.
+**Key concept:** Human-authored fields (values, dealBreakers, requirements, voiceNotes) are never overwritten. Agent 1 only patches AI-derived fields.
 
 ---
 
@@ -24,7 +39,7 @@ Each application page is generated from structured content: your research about 
 | Layer | Technology |
 |-------|------------|
 | **Frontend** | Next.js 15, React 19, TypeScript, Tailwind CSS v4 |
-| **CMS** | Sanity Studio v4 (headless) |
+| **CMS** | Sanity Studio v4 |
 | **Auth** | Firebase Authentication |
 | **Automation** | n8n + Gemini 2.5 Flash |
 | **Deployment** | Netlify |
@@ -35,52 +50,26 @@ Each application page is generated from structured content: your research about 
 
 ```
 meljonesai/
-├── web/                # Next.js application
-├── sanity-studio/      # Sanity CMS
-├── automation/         # n8n workflows
-└── .gemini/            # AI context documents
+├── web/                      # Next.js application
+├── sanity-studio/            # Sanity CMS
+├── automation/n8n/workflows/ # n8n workflow JSON files
+└── .gemini/                  # AI prompts and context docs
 ```
 
 ---
 
 ## Quick Start
 
-### Prerequisites
-
-- Node.js 18+
-- npm
-
-### Installation
-
 ```bash
 git clone https://github.com/MoodyBones/meljonesai.git
 cd meljonesai
 npm install
-```
 
-### Development
-
-```bash
 # Terminal 1 - Sanity Studio (port 3333)
 npm run studio:dev
 
 # Terminal 2 - Next.js App (port 3000)
 npm run web:dev
-```
-
-### Environment Variables
-
-Create `web/.env.local`:
-
-```bash
-# Sanity
-NEXT_PUBLIC_SANITY_PROJECT_ID=your_project_id
-NEXT_PUBLIC_SANITY_DATASET=production
-
-# Firebase
-NEXT_PUBLIC_FIREBASE_API_KEY=your_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
 ```
 
 ---
@@ -89,14 +78,12 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
 
 | Milestone | Description | Status |
 |-----------|-------------|--------|
-| M1 | Firebase Authentication | ✅ Complete |
-| M3 | Sanity Schemas | ✅ Complete |
-| M2 | n8n Workflow | ✅ Complete |
-| M4 | Admin Interface | ✅ Complete |
-| M5 | Content Generation Testing | In Progress |
-| M6 | Production Deployment | ✅ Deployed |
-
-**Live:** [meljonesai.netlify.app](https://meljonesai.netlify.app) · [Sanity Studio](https://meljonesai.sanity.studio)
+| M1 | Firebase Authentication | ✅ |
+| M2 | n8n Workflow | ✅ |
+| M3 | Sanity Schemas | ✅ |
+| M4 | Admin Interface | ✅ |
+| M6 | Production Deployment | ✅ |
+| M7 | Two-Agent Architecture | ✅ |
 
 ---
 
@@ -104,37 +91,21 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
 
 | File | Purpose |
 |------|---------|
-| `.gemini/CONTEXT_CONTENT_GEN.md` | Voice & tone guidelines for AI generation |
-| `automation/n8n/workflows/` | Versioned n8n workflow JSON |
-| `sanity-studio/schemaTypes/` | Sanity document schemas |
-
----
-
-## Success Criteria
-
-- [x] Sanity schemas implemented
-- [x] Firebase auth working
-- [x] n8n workflow generating content
-- [x] Admin forms for job/project input
-- [x] Deployed to Netlify
-- [ ] Lighthouse accessibility score >= 90
-- [ ] OG image renders correctly
+| `sanity-studio/schemaTypes/profile.ts` | Profile schema (human vs AI fields) |
+| `sanity-studio/schemaTypes/jobApplication.ts` | Job application with match scoring |
+| `automation/n8n/workflows/profile-builder.json` | Agent 1 workflow |
+| `automation/n8n/workflows/job-matcher.json` | Agent 2 workflow |
+| `.gemini/PROMPT_AGENT_*.md` | AI prompts for each agent |
 
 ---
 
 ## Scripts
 
 ```bash
-# Development
 npm run web:dev          # Next.js dev server
 npm run studio:dev       # Sanity Studio
-
-# Build
 npm run web:build        # Production build
-npm run studio:build     # Studio build
-
-# Quality
-npm run web:typecheck    # TypeScript
+npm run web:typecheck    # TypeScript check
 npm run web:lint         # ESLint
 ```
 
