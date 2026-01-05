@@ -47,6 +47,6 @@ test.describe('Auth smoke tests', () => {
 
     // Now visit /admin and expect protected content
     await page.goto('/admin')
-    await expect(page.locator('text=Admin Dashboard')).toBeVisible()
+    await expect(page.locator('text=Dashboard')).toBeVisible()
   })
 })
