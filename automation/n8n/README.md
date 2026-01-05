@@ -164,9 +164,34 @@ Both workflows include 1-second wait nodes.
 
 ## Setup
 
+### Important: Credential Management
+
+**⚠️ Security Best Practice:**
+
+The workflow JSON files in this repository contain placeholder values (`YOUR_GEMINI_API_KEY`, `YOUR_SANITY_TOKEN`) for demonstration purposes. When importing these workflows into n8n:
+
+1. **Use n8n's credentials store** instead of embedding keys in workflow JSON:
+   - Go to **Credentials** in n8n
+   - Add credentials for:
+     - `Gemini API Key` (HTTP Header Auth)
+     - `Sanity API Token` (HTTP Header Auth)
+   - Reference these credentials in HTTP Request nodes
+
+2. **Never commit actual keys:**
+   - Actual API keys and tokens should never be committed to version control
+   - Always use environment variables or n8n's credential system
+   - Review workflow exports before committing to ensure no secrets are included
+
+3. **Rotate keys if exposed:**
+   - If credentials are accidentally committed, rotate them immediately
+   - Update keys in n8n's credential store
+   - Review git history to ensure secrets are removed
+
+### Installation Steps
+
 1. Import workflows into n8n
-2. Replace `YOUR_GEMINI_API_KEY` with actual key
-3. Replace `YOUR_SANITY_TOKEN` with actual token
+2. Configure credentials in n8n's credential store (see above)
+3. Update HTTP Request nodes to reference stored credentials
 4. Activate workflows
 
 ---

@@ -20,7 +20,7 @@ Analyse project data and generate AI-derived profile fields. **Do not touch huma
 - `differentiators`
 - `growthEdges`
 - `themesSummary`
-- `lastAnalysed`
+- `lastAnalyzed`
 - `sourceProjects`
 
 ---
@@ -95,7 +95,7 @@ Return valid JSON with **only AI-derived fields**:
     "Leadership title (experience exists, title doesn't)"
   ],
   "themesSummary": "Mel builds systems that scale — whether that's component libraries, onboarding documentation, or automated workflows. The through-line is making complex things usable and reducing friction for the humans who come next.",
-  "lastAnalysed": "2025-01-02T10:30:00Z",
+  "lastAnalyzed": "2025-01-02T10:30:00Z",
   "sourceProjects": ["P-01", "P-02", "P-03", "P-04", "P-05"]
 }
 ```

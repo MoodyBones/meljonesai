@@ -97,6 +97,7 @@ export default defineType({
       to: [{type: 'profile'}],
       group: 'match',
       description: 'The profile used for matching',
+      validation: (Rule) => Rule.required(),
     }),
 
     // === RESEARCH CONTEXT (for input curation) ===
