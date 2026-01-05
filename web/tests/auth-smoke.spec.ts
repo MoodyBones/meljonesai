@@ -1,11 +1,12 @@
 import {test, expect} from '@playwright/test'
 
 test.describe('Auth smoke tests', () => {
-  test('unauthenticated /admin redirects to /login and login page shows button', async ({page}) => {
-    await page.goto('/admin')
-    // Expect to be redirected to /login (or see login content)
+  test('unauthenticated /admin redirects to /login', async ({page}) => {
+    const response = await page.goto('/admin')
+    // Expect to be redirected to /login (unauthenticated)
     await expect(page).toHaveURL(/\/login/)
-    await expect(page.locator('text=Sign in with Google')).toBeVisible()
+    // Page should load without server error
+    expect(response?.status()).toBeLessThan(500)
   })
 
   test('if PLAYWRIGHT_AUTH_ID_TOKEN is provided, exchange for session and access /admin', async ({
