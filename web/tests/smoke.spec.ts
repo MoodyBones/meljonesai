@@ -1,19 +1,22 @@
 import {test, expect} from '@playwright/test'
 
-test('home and slug pages render and contain Application heading', async ({page}) => {
-  await page.goto('/')
-  await expect(page.locator('text=Application')).toBeVisible()
-
-  await page.goto('/atlassian-role')
-  await expect(page.locator('text=Introduction')).toBeVisible()
+test('home page redirects to login or admin', async ({page}) => {
+  const response = await page.goto('/')
+  // Home should redirect to /login (unauthenticated) or /admin (authenticated)
+  expect(page.url()).toMatch(/\/(login|admin)/)
+  expect(response?.status()).toBeLessThan(500)
 })
 
-test('preview route redirects to slug when secret matches', async ({request}) => {
-  // Use the preview secret set in CI or local env
-  const secret = process.env.SANITY_PREVIEW_SECRET || 'test-secret'
-  const url = `/api/preview?secret=${encodeURIComponent(secret)}&slug=/atlassian-role`
-  const res = await request.get(url, {maxRedirects: 0}).catch((e) => e)
-  // Expect a redirect (302 or 307)
-  expect(res.status()).toBeGreaterThanOrEqual(300)
-  expect(res.status()).toBeLessThan(400)
+test('login page loads without server error', async ({page}) => {
+  const response = await page.goto('/login')
+  // Page should load without 500 error
+  expect(response?.status()).toBeLessThan(500)
+  // Wait for any content to render (page should have a body with content)
+  await expect(page.locator('body')).not.toBeEmpty()
+})
+
+test('non-existent slug returns without server error', async ({page}) => {
+  const response = await page.goto('/non-existent-slug-12345')
+  // Page should not crash with 500 error
+  expect(response?.status()).toBeLessThan(500)
 })

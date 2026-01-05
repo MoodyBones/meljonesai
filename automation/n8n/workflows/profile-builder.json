@@ -1,0 +1,174 @@
+{
+  "name": "Profile Builder (Agent 1)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "build-profile",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "webhook-trigger",
+      "name": "Trigger Build",
+      "webhookId": "build-profile"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://psf3aj1o.api.sanity.io/v2024-01-01/data/query/production",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "*[_type == \"project\"]{ projectId, name, focus, keyMetric, description, technologies, skillsApplied, organisation, year, status }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0],
+      "id": "fetch-projects",
+      "name": "Fetch Projects"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://psf3aj1o.api.sanity.io/v2024-01-01/data/query/production",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "*[_type == \"profile\"][0]{ _id, name, values, dealBreakers, requirements, voiceNotes }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 200],
+      "id": "fetch-profile",
+      "name": "Fetch Existing Profile"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [400, 100],
+      "id": "merge-data",
+      "name": "Merge Data"
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [600, 100],
+      "id": "wait-node",
+      "name": "Rate Limit Buffer"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=YOUR_GEMINI_API_KEY",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: `# Agent 1: Profile Builder\n\nAnalyse this person's projects and generate AI-derived profile fields.\n\n## IMPORTANT: Only output AI-derived fields. Human-authored fields are preserved separately.\n\n## PROJECTS TO ANALYSE\n${JSON.stringify($('Fetch Projects').first().json.result, null, 2)}\n\n## PROCESSING STEPS\n1. Theme Extraction: What patterns appear across projects?\n2. Capability Mapping: What has this person PROVEN with evidence?\n3. Strength Ranking: high (multiple projects, strong metrics), medium (clear but limited), emerging (interest, less proof)\n4. Differentiators: Unusual combinations, rare skills\n5. Growth Edges: Areas of interest with thinner evidence (frame positively)\n6. Themes Summary: 2-3 sentence synthesis\n\n## OUTPUT FORMAT (JSON only, no markdown)\nReturn a valid JSON object with ONLY these fields:\n{\n  \"provenCapabilities\": [\n    {\n      \"capability\": \"Name of capability\",\n      \"strength\": \"high|medium|emerging\",\n      \"evidence\": [\"P-XX: Specific metric or outcome\", \"P-YY: Another outcome\"],\n      \"themes\": [\"theme1\", \"theme2\"]\n    }\n  ],\n  \"differentiators\": [\"What sets them apart - be specific\"],\n  \"growthEdges\": [\"Areas of interest, framed positively\"],\n  \"themesSummary\": \"2-3 sentences synthesising patterns across all projects.\",\n  \"sourceProjects\": [\"P-01\", \"P-02\", ...]\n}\n\nBe honest about evidence strength. Don't inflate capabilities without proof.\nReturn ONLY the JSON object. No explanation, no markdown.` }] }], generationConfig: { temperature: 0.7, responseMimeType: \"application/json\" } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [800, 100],
+      "id": "gemini-call",
+      "name": "Analyse with Gemini"
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiResponse = $input.first().json;\nconst existingProfile = $('Fetch Existing Profile').first().json.result;\nconst geminiText = geminiResponse.candidates[0].content.parts[0].text;\n\n// Parse Gemini response\nlet aiFields;\ntry {\n  aiFields = JSON.parse(geminiText);\n} catch (e) {\n  const match = geminiText.match(/\\{[\\s\\S]*\\}/);\n  aiFields = match ? JSON.parse(match[0]) : { error: 'Could not parse response' };\n}\n\n// Add _key to provenCapabilities for Sanity\nconst timestamp = Date.now().toString(36);\nconst provenCapabilities = (aiFields.provenCapabilities || []).map((cap, i) => ({\n  _key: 'cap' + i + timestamp,\n  capability: cap.capability,\n  strength: cap.strength,\n  evidence: cap.evidence || [],\n  themes: cap.themes || []\n}));\n\n// Build patch payload (only AI-derived fields)\nconst patch = {\n  provenCapabilities: provenCapabilities,\n  differentiators: aiFields.differentiators || [],\n  growthEdges: aiFields.growthEdges || [],\n  themesSummary: aiFields.themesSummary || '',\n  lastAnalysed: new Date().toISOString(),\n  sourceProjects: aiFields.sourceProjects || []\n};\n\nreturn {\n  json: {\n    profileId: existingProfile?._id || 'profile-main',\n    patch: patch,\n    capabilityCount: provenCapabilities.length\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 100],
+      "id": "parse-response",
+      "name": "Parse & Build Patch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://psf3aj1o.api.sanity.io/v2024-01-01/data/mutate/production",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SANITY_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ mutations: [{ patch: { id: $json.profileId, set: $json.patch } }] }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 100],
+      "id": "sanity-patch",
+      "name": "Patch Profile"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, message: 'Profile analysed', profileId: $('Parse & Build Patch').first().json.profileId, capabilitiesFound: $('Parse & Build Patch').first().json.capabilityCount, analysedAt: new Date().toISOString() } }}"
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1400, 100],
+      "id": "respond-success",
+      "name": "Return Success"
+    }
+  ],
+  "connections": {
+    "Trigger Build": {
+      "main": [[
+        { "node": "Fetch Projects", "type": "main", "index": 0 },
+        { "node": "Fetch Existing Profile", "type": "main", "index": 0 }
+      ]]
+    },
+    "Fetch Projects": {
+      "main": [[{ "node": "Merge Data", "type": "main", "index": 0 }]]
+    },
+    "Fetch Existing Profile": {
+      "main": [[{ "node": "Merge Data", "type": "main", "index": 1 }]]
+    },
+    "Merge Data": {
+      "main": [[{ "node": "Rate Limit Buffer", "type": "main", "index": 0 }]]
+    },
+    "Rate Limit Buffer": {
+      "main": [[{ "node": "Analyse with Gemini", "type": "main", "index": 0 }]]
+    },
+    "Analyse with Gemini": {
+      "main": [[{ "node": "Parse & Build Patch", "type": "main", "index": 0 }]]
+    },
+    "Parse & Build Patch": {
+      "main": [[{ "node": "Patch Profile", "type": "main", "index": 0 }]]
+    },
+    "Patch Profile": {
+      "main": [[{ "node": "Return Success", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

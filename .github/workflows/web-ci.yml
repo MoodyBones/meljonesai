@@ -78,19 +78,12 @@ jobs:
       - name: Build web workspace
         run: npm --workspace=web run build
 
-      - name: Start web server
-        run: |
-          npm --workspace=web run start &
-          npx wait-on http://localhost:3000
-
       - name: Verify required secrets
         id: verify_secrets
         env:
           SANITY_PREVIEW_SECRET: ${{ secrets.SANITY_PREVIEW_SECRET }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
           SANITY_WRITE_TOKEN: ${{ secrets.SANITY_WRITE_TOKEN }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          N8N_WEBHOOK_SECRET: ${{ secrets.N8N_WEBHOOK_SECRET }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
@@ -101,7 +94,7 @@ jobs:
           firebase_missing=""
 
           # Check general secrets
-          for v in SANITY_PREVIEW_SECRET NEXT_PUBLIC_SITE_URL SANITY_WRITE_TOKEN ANTHROPIC_API_KEY N8N_WEBHOOK_SECRET; do
+          for v in SANITY_PREVIEW_SECRET NEXT_PUBLIC_SITE_URL SANITY_WRITE_TOKEN; do
             if [ -z "${!v}" ]; then
               missing="$missing $v"
             fi
@@ -157,6 +150,17 @@ jobs:
             echo "⚠️  Failed to mint ID token"
             echo "success=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start web server
+        if: steps.verify_secrets.outputs.secrets_ok == 'true'
+        env:
+          SANITY_PREVIEW_SECRET: ${{ secrets.SANITY_PREVIEW_SECRET }}
+        run: |
+          npm --workspace=web run start &
+          npx wait-on http://localhost:3000
 
       - name: Run Playwright smoke tests
         if: steps.verify_secrets.outputs.secrets_ok == 'true'

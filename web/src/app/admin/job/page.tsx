@@ -3,18 +3,39 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
-type FormState = 'idle' | 'submitting' | 'success' | 'error'
+type FormState = 'idle' | 'submitting' | 'success' | 'rejected' | 'error'
 
-type SuccessResult = {
+type Gap = {
+  requirement: string
+  gap: string
+  reframe: string
+}
+
+type MatchResult = {
+  matchCategory: 'match' | 'partial'
+  matchScore: number
+  gaps: Gap[]
   company: string
   role: string
   studioUrl: string
 }
 
+type RejectResult = {
+  matchCategory: 'reject'
+  matchScore: number
+  reason: string
+  dealBreakersTriggered: string[]
+  requirementsNotMet: string[]
+  notNow: boolean
+  company: string
+  role: string
+}
+
 export default function JobInputPage() {
   const [formState, setFormState] = useState<FormState>('idle')
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<SuccessResult | null>(null)
+  const [matchResult, setMatchResult] = useState<MatchResult | null>(null)
+  const [rejectResult, setRejectResult] = useState<RejectResult | null>(null)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -25,11 +46,12 @@ export default function JobInputPage() {
     const payload = {
       companyName: formData.get('companyName') as string,
       roleTitle: formData.get('roleTitle') as string,
+      jobUrl: formData.get('jobUrl') as string || undefined,
       jobDescription: formData.get('jobDescription') as string,
     }
 
     try {
-      const response = await fetch('https://n8n.goodsomeday.com/webhook/job-application', {
+      const response = await fetch('https://n8n.goodsomeday.com/webhook/match-job', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -40,12 +62,14 @@ export default function JobInputPage() {
       }
 
       const data = await response.json()
-      setResult({
-        company: data.company,
-        role: data.role,
-        studioUrl: data.studioUrl,
-      })
-      setFormState('success')
+
+      if (data.matchCategory === 'reject') {
+        setRejectResult(data)
+        setFormState('rejected')
+      } else {
+        setMatchResult(data)
+        setFormState('success')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
       setFormState('error')
@@ -55,7 +79,8 @@ export default function JobInputPage() {
   function handleReset() {
     setFormState('idle')
     setError(null)
-    setResult(null)
+    setMatchResult(null)
+    setRejectResult(null)
   }
 
   return (
@@ -73,32 +98,103 @@ export default function JobInputPage() {
             New Job Application
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Paste the job description to generate personalised application content
+            Paste the job description to match against your profile
           </p>
         </div>
 
-        {/* Success State */}
-        {formState === 'success' && result && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
-            <div className="text-green-800 dark:text-green-200">
-              <h2 className="font-medium text-lg">Draft Created</h2>
+        {/* Success State (MATCH or PARTIAL) */}
+        {formState === 'success' && matchResult && (
+          <div className={`${matchResult.matchCategory === 'match' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'} border rounded-lg p-6`}>
+            <div className={matchResult.matchCategory === 'match' ? 'text-green-800 dark:text-green-200' : 'text-amber-800 dark:text-amber-200'}>
+              <div className="flex items-center justify-between">
+                <h2 className="font-medium text-lg">
+                  {matchResult.matchCategory === 'match' ? 'Strong Match' : 'Partial Match'}
+                </h2>
+                <span className="text-2xl font-bold">{matchResult.matchScore}%</span>
+              </div>
               <p className="mt-2 text-sm">
-                Application for <strong>{result.role}</strong> at <strong>{result.company}</strong>
+                <strong>{matchResult.role}</strong> at <strong>{matchResult.company}</strong>
               </p>
+
+              {/* Gaps for partial matches */}
+              {matchResult.matchCategory === 'partial' && matchResult.gaps.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="font-medium text-sm">Gaps to address:</p>
+                  {matchResult.gaps.map((gap, i) => (
+                    <div key={i} className="text-sm bg-white/50 dark:bg-black/20 rounded p-2">
+                      <p><strong>{gap.requirement}</strong></p>
+                      <p className="text-amber-700 dark:text-amber-300">{gap.gap}</p>
+                      <p className="italic mt-1">Reframe: {gap.reframe}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="mt-4 flex gap-3">
                 <a
-                  href={result.studioUrl}
+                  href={matchResult.studioUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block bg-green-600 text-white text-sm py-2 px-4 rounded hover:bg-green-700"
+                  className={`inline-block ${matchResult.matchCategory === 'match' ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'} text-white text-sm py-2 px-4 rounded`}
                 >
                   Open in Sanity Studio
                 </a>
                 <button
                   onClick={handleReset}
-                  className="text-sm text-green-700 dark:text-green-300 hover:underline"
+                  className={`text-sm ${matchResult.matchCategory === 'match' ? 'text-green-700 dark:text-green-300' : 'text-amber-700 dark:text-amber-300'} hover:underline`}
                 >
-                  Create Another
+                  Try Another
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rejected State */}
+        {formState === 'rejected' && rejectResult && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+            <div className="text-red-800 dark:text-red-200">
+              <div className="flex items-center justify-between">
+                <h2 className="font-medium text-lg">Not a Match</h2>
+                <span className="text-2xl font-bold">{rejectResult.matchScore}%</span>
+              </div>
+              <p className="mt-2 text-sm">
+                <strong>{rejectResult.role}</strong> at <strong>{rejectResult.company}</strong>
+              </p>
+              <p className="mt-3 text-sm">{rejectResult.reason}</p>
+
+              {rejectResult.dealBreakersTriggered.length > 0 && (
+                <div className="mt-3">
+                  <p className="font-medium text-sm">Deal breakers:</p>
+                  <ul className="list-disc list-inside text-sm">
+                    {rejectResult.dealBreakersTriggered.map((db, i) => (
+                      <li key={i}>{db}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {rejectResult.requirementsNotMet.length > 0 && (
+                <div className="mt-3">
+                  <p className="font-medium text-sm">Requirements not met:</p>
+                  <ul className="list-disc list-inside text-sm">
+                    {rejectResult.requirementsNotMet.map((req, i) => (
+                      <li key={i}>{req}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <p className="mt-3 text-sm italic">
+                {rejectResult.notNow ? 'This might fit in the future.' : 'Fundamental mismatch.'}
+              </p>
+
+              <div className="mt-4">
+                <button
+                  onClick={handleReset}
+                  className="text-sm text-red-700 dark:text-red-300 hover:underline"
+                >
+                  Try Another Job
                 </button>
               </div>
             </div>
@@ -106,7 +202,7 @@ export default function JobInputPage() {
         )}
 
         {/* Form */}
-        {formState !== 'success' && (
+        {formState !== 'success' && formState !== 'rejected' && (
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {formState === 'error' && error && (
@@ -192,7 +288,7 @@ export default function JobInputPage() {
               disabled={formState === 'submitting'}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {formState === 'submitting' ? 'Generating...' : 'Generate Application Content'}
+              {formState === 'submitting' ? 'Matching...' : 'Match & Generate'}
             </button>
           </form>
         )}

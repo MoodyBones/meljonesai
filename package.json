@@ -4,8 +4,10 @@
   "version": "1.0.0",
   "scripts": {
     "web:dev": "cd web && npm run dev",
-    "studio:dev": "cd sanity-studio && npm run dev",
     "web:build": "cd web && npm run build",
+    "web:typecheck": "cd web && npm run typecheck",
+    "web:lint": "cd web && npm run lint",
+    "studio:dev": "cd sanity-studio && npm run dev",
     "studio:build": "cd sanity-studio && npm run build"
   },
   "workspaces": [

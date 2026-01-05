@@ -1,6 +1,6 @@
 'use client'
 
-import React, {useState, useEffect} from 'react'
+import React, {useState} from 'react'
 import {useRouter} from 'next/navigation'
 import {auth, googleProvider} from '@/lib/firebase/config'
 import {signInWithPopup} from 'firebase/auth'

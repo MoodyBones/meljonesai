@@ -2,56 +2,153 @@
 
 Automation workflows for MelJonesAI content generation.
 
-## Workflow: Job Application Generator
+## Architecture
 
-**Live endpoint:** `https://n8n.goodsomeday.com/webhook/job-application`
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Workflow 1: Profile Builder (Agent 1)                      │
+│  Trigger: POST /webhook/build-profile                       │
+│                                                             │
+│  Sanity Projects → Gemini Analysis → Patch Profile          │
+│  (preserves human-authored fields, regenerates AI fields)   │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Workflow 2: Job Matcher (Agent 2)                          │
+│  Trigger: POST /webhook/match-job                           │
+│                                                             │
+│  Job Description + Profile → Gemini Matching → Branch       │
+│     ├── MATCH (70%+)   → Create jobApplication              │
+│     ├── PARTIAL (40-70%) → Create with gaps noted           │
+│     └── REJECT (<40%)  → Return explanation (no document)   │
+└─────────────────────────────────────────────────────────────┘
+```
 
-**Flow (6 nodes):**
-```
-Webhook → Wait (1s) → Gemini → Parse → Sanity → Response
-```
+---
+
+## Workflow 1: Profile Builder
+
+**Endpoint:** `POST https://n8n.goodsomeday.com/webhook/build-profile`
+
+**Purpose:** Analyse all projects and update the profile's AI-derived fields.
 
 ### Request
 
 ```bash
-curl -X POST https://n8n.goodsomeday.com/webhook/job-application \
-  -H "Content-Type: application/json" \
-  -d '{
-    "companyName": "Canva",
-    "roleTitle": "Senior Frontend Engineer",
-    "jobDescription": "We are looking for..."
-  }'
+curl -X POST https://n8n.goodsomeday.com/webhook/build-profile
 ```
+
+No body required — fetches projects from Sanity.
 
 ### Response
 
 ```json
 {
   "success": true,
-  "message": "Draft created",
-  "company": "Canva",
-  "role": "Frontend Engineer, Design Systems",
-  "studioUrl": "https://meljonesai.sanity.studio/structure/jobApplication;..."
+  "message": "Profile analysed",
+  "profileId": "profile-main",
+  "capabilitiesFound": 5,
+  "analysedAt": "2025-01-02T10:30:00Z"
 }
 ```
 
-## Nodes
+### Nodes (8)
 
 | # | Node | Purpose |
 |---|------|---------|
-| 1 | Receive Job Description | Webhook trigger |
-| 2 | Rate Limit Buffer | 1 second wait (Gemini free tier) |
-| 3 | Generate Content | Gemini 2.5 Flash API call |
-| 4 | Parse Response | Extract JSON, generate slug |
-| 5 | Create Sanity Draft | Mutation API |
-| 6 | Return Success | Webhook response |
+| 1 | Trigger Build | Webhook trigger |
+| 2 | Fetch Projects | Get all projects from Sanity |
+| 3 | Fetch Existing Profile | Get current profile (human fields) |
+| 4 | Merge Data | Combine for processing |
+| 5 | Rate Limit Buffer | 1 second wait |
+| 6 | Analyse with Gemini | Agent 1 prompt |
+| 7 | Parse & Build Patch | Extract AI fields |
+| 8 | Patch Profile | Update only AI fields in Sanity |
 
-## Gemini Prompt
+---
 
-Uses context from `.gemini/CONTEXT_CONTENT_GEN.md`:
-- Voice & tone guidelines
-- Skill matrix
-- Project evidence table (P-01 to P-05)
+## Workflow 2: Job Matcher
+
+**Endpoint:** `POST https://n8n.goodsomeday.com/webhook/match-job`
+
+**Purpose:** Compare job against profile, score fit, generate content or reject.
+
+### Request
+
+```bash
+curl -X POST https://n8n.goodsomeday.com/webhook/match-job \
+  -H "Content-Type: application/json" \
+  -d '{
+    "companyName": "Canva",
+    "roleTitle": "Senior Frontend Engineer",
+    "jobUrl": "https://...",
+    "jobDescription": "We are looking for..."
+  }'
+```
+
+### Response (MATCH)
+
+```json
+{
+  "success": true,
+  "matchCategory": "match",
+  "matchScore": 85,
+  "company": "Canva",
+  "role": "Senior Frontend Engineer",
+  "studioUrl": "https://meljonesai.sanity.studio/structure/jobApplication;drafts.canva-senior-frontend-engineer-abc123"
+}
+```
+
+### Response (PARTIAL)
+
+```json
+{
+  "success": true,
+  "matchCategory": "partial",
+  "matchScore": 55,
+  "gaps": [
+    {
+      "requirement": "5 years React",
+      "gap": "3 years Next.js",
+      "reframe": "Modern React architecture including App Router"
+    }
+  ],
+  "message": "Review gaps before publishing"
+}
+```
+
+### Response (REJECT)
+
+```json
+{
+  "success": false,
+  "matchCategory": "reject",
+  "matchScore": 25,
+  "reason": "Role requires on-site Sydney, conflicts with remote requirement",
+  "dealBreakersTriggered": [],
+  "requirementsNotMet": ["Remote or hybrid"],
+  "notNow": false,
+  "message": "No application created"
+}
+```
+
+### Nodes (11)
+
+| # | Node | Purpose |
+|---|------|---------|
+| 1 | Receive Job | Webhook trigger |
+| 2 | Fetch Profile | Get complete profile |
+| 3 | Rate Limit Buffer | 1 second wait |
+| 4 | Match with Gemini | Agent 2 prompt |
+| 5 | Parse Response | Extract match result |
+| 6 | Branch by Category | Switch on MATCH/PARTIAL/REJECT |
+| 7 | Create Application (MATCH) | Sanity mutation |
+| 8 | Create Application (PARTIAL) | Sanity mutation with gaps |
+| 9 | Return MATCH | Success response |
+| 10 | Return PARTIAL | Success with gaps |
+| 11 | Return REJECT | Rejection explanation |
+
+---
 
 ## Rate Limits (Gemini 2.5 Flash Free Tier)
 
@@ -61,4 +158,44 @@ Uses context from `.gemini/CONTEXT_CONTENT_GEN.md`:
 | RPM | 15/minute |
 | TPM | 1M tokens/minute |
 
-The 1-second wait node provides buffer. For bulk processing (>15 jobs), enable batching.
+Both workflows include 1-second wait nodes.
+
+---
+
+## Setup
+
+### Important: Credential Management
+
+**⚠️ Security Best Practice:**
+
+The workflow JSON files in this repository contain placeholder values (`YOUR_GEMINI_API_KEY`, `YOUR_SANITY_TOKEN`) for demonstration purposes. When importing these workflows into n8n:
+
+1. **Use n8n's credentials store** instead of embedding keys in workflow JSON:
+   - Go to **Credentials** in n8n
+   - Add credentials for:
+     - `Gemini API Key` (HTTP Header Auth)
+     - `Sanity API Token` (HTTP Header Auth)
+   - Reference these credentials in HTTP Request nodes
+
+2. **Never commit actual keys:**
+   - Actual API keys and tokens should never be committed to version control
+   - Always use environment variables or n8n's credential system
+   - Review workflow exports before committing to ensure no secrets are included
+
+3. **Rotate keys if exposed:**
+   - If credentials are accidentally committed, rotate them immediately
+   - Update keys in n8n's credential store
+   - Review git history to ensure secrets are removed
+
+### Installation Steps
+
+1. Import workflows into n8n
+2. Configure credentials in n8n's credential store (see above)
+3. Update HTTP Request nodes to reference stored credentials
+4. Activate workflows
+
+---
+
+## Legacy Workflow
+
+`job-to-application.json` — Original single-agent workflow (deprecated, kept for reference).

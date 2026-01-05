@@ -35,6 +35,57 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
+## Playwright E2E Testing
+
+This project uses [Playwright](https://playwright.dev) for end-to-end testing.
+
+### Test Files
+
+```
+web/tests/
+├── smoke.spec.ts        # Basic page load tests (home, login, 404)
+└── auth-smoke.spec.ts   # Authentication flow tests
+```
+
+### Running Tests Locally
+
+```bash
+# 1. Build the app first
+npm run --workspace=web build
+
+# 2. Start the server in one terminal
+npm run --workspace=web start
+
+# 3. Run tests in another terminal
+npm run --workspace=web test:e2e
+```
+
+### Viewing Results
+
+- **Terminal**: Shows pass/fail for each test
+- **HTML Report**: Open `web/playwright-report/index.html` after running tests
+- **Videos**: Saved in `web/test-results/` when tests fail
+- **Trace Viewer**: `npx playwright show-trace web/test-results/<test>/trace.zip`
+
+### Interactive/Debug Modes
+
+```bash
+npx playwright test --ui        # Visual test runner
+npx playwright test --debug     # Step through tests
+npx playwright test --headed    # See browser window
+```
+
+### CI Behavior
+
+In GitHub Actions, tests run automatically on PRs:
+- Browsers are installed via `npx playwright install --with-deps chromium`
+- Test artifacts (videos, traces) are uploaded for failed tests
+- Authenticated tests require `PLAYWRIGHT_AUTH_ID_TOKEN` env var (minted in CI)
+
+### Test Philosophy
+
+Smoke tests verify pages load without server errors (status < 500). They don't assert specific content since that depends on CMS data and client-side rendering. This makes tests reliable across environments.
+
 ## Session cookie contract (mj_session)
 
 This project uses a server-set httpOnly session cookie named `mj_session` for authenticated admin sessions.
