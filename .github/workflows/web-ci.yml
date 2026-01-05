@@ -78,11 +78,6 @@ jobs:
       - name: Build web workspace
         run: npm --workspace=web run build
 
-      - name: Start web server
-        run: |
-          npm --workspace=web run start &
-          npx wait-on http://localhost:3000
-
       - name: Verify required secrets
         id: verify_secrets
         env:
@@ -155,6 +150,17 @@ jobs:
             echo "⚠️  Failed to mint ID token"
             echo "success=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start web server
+        if: steps.verify_secrets.outputs.secrets_ok == 'true'
+        env:
+          SANITY_PREVIEW_SECRET: ${{ secrets.SANITY_PREVIEW_SECRET }}
+        run: |
+          npm --workspace=web run start &
+          npx wait-on http://localhost:3000
 
       - name: Run Playwright smoke tests
         if: steps.verify_secrets.outputs.secrets_ok == 'true'
