@@ -9,6 +9,15 @@ export default defineType({
     {name: 'ai', title: 'AI-Derived'},
   ],
   fields: [
+    // ============ OWNERSHIP ============
+    defineField({
+      name: 'ownerId',
+      title: 'Owner ID',
+      type: 'string',
+      description: 'Firebase UID of the profile owner. Enables multi-user support.',
+      validation: (Rule) => Rule.required(),
+    }),
+
     // ============ HUMAN-AUTHORED ============
     defineField({
       name: 'name',
