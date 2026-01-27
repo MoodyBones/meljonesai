@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Mel Jones | Career Applications",
+  title: "Steep | Career Applications",
   description: "Personalised career narratives and application pages",
 };
 
