@@ -1,4 +1,4 @@
-// GROQ queries for MelJonesAI
+// GROQ queries for Steep
 
 // Only return slugs for published applications (for SSG)
 export const APPLICATION_SLUGS_QUERY = `

@@ -6,7 +6,7 @@ import {desk} from './deskStructure'
 
 export default defineConfig({
   name: 'default',
-  title: 'meljonesai',
+  title: 'Steep',
 
   projectId: 'psf3aj1o',
   dataset: 'production',

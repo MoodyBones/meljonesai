@@ -26,7 +26,7 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
     return {title: 'Not Found'}
   }
 
-  const title = `${data.targetRoleTitle} at ${data.targetCompany} | Mel Jones`
+  const title = `${data.targetRoleTitle} at ${data.targetCompany} | Steep`
   const description = data.customIntroduction?.slice(0, 160) || ''
 
   return {
@@ -323,7 +323,7 @@ export default async function ApplicationPage({params}: PageProps) {
         {/* Footer */}
         <footer className="mt-12 border-t border-gray-200 pt-8 text-center">
           <p className="text-sm text-gray-500">
-            Mel Jones
+            Powered by Steep
           </p>
         </footer>
       </div>
