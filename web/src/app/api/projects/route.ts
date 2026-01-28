@@ -20,7 +20,8 @@ type ProjectInput = {
   url?: string
 }
 
-export async function GET(request: Request) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_request: Request) {
   // Verify session
   const cookieStore = await cookies()
   const session = cookieStore.get('mj_session')
