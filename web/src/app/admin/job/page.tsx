@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { auth } from '@/lib/firebase/config'
 
 type FormState = 'idle' | 'submitting' | 'success' | 'rejected' | 'error'
 
@@ -43,11 +44,17 @@ export default function JobInputPage() {
     setError(null)
 
     const formData = new FormData(e.currentTarget)
+    
+    // Get current user's ID token to pass to webhook
+    // TODO: n8n webhook needs to be updated to accept idToken and filter profile/projects by user
+    const idToken = auth ? await auth.currentUser?.getIdToken() : null
+    
     const payload = {
       companyName: formData.get('companyName') as string,
       roleTitle: formData.get('roleTitle') as string,
       jobUrl: formData.get('jobUrl') as string || undefined,
       jobDescription: formData.get('jobDescription') as string,
+      idToken, // n8n can verify this token and extract userId for filtering
     }
 
     try {

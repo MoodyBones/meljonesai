@@ -84,8 +84,18 @@ export default function AdminPage() {
     setProfileBuildResult(null)
 
     try {
+      // Get current user's ID token to pass to webhook
+      // TODO: n8n webhook needs to be updated to accept userId parameter and filter projects by user
+      const idToken = auth ? await auth.currentUser?.getIdToken() : null
+      
       const response = await fetch('https://n8n.goodsomeday.com/webhook/build-profile', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idToken, // n8n can verify this token and extract userId for filtering
+        }),
       })
 
       if (!response.ok) {
