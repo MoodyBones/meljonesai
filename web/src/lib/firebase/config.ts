@@ -24,6 +24,8 @@ if (typeof window !== 'undefined') {
   }
   auth = getAuth(app);
   googleProvider = new GoogleAuthProvider();
+  // Force Google account picker for multi-user support
+  googleProvider.setCustomParameters({ prompt: 'select_account' });
 }
 
 export { auth, googleProvider };

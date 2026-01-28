@@ -19,6 +19,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [profileBuildState, setProfileBuildState] = useState<ProfileBuildState>('idle')
   const [profileBuildResult, setProfileBuildResult] = useState<string | null>(null)
+  const [projectCount, setProjectCount] = useState<number>(0)
 
   useEffect(() => {
     if (!auth) {
@@ -43,6 +44,25 @@ export default function AdminPage() {
     return () => unsubscribe()
   }, [router])
 
+  // Fetch project count when user is set
+  useEffect(() => {
+    async function fetchProjectCount() {
+      try {
+        const response = await fetch('/api/projects')
+        if (response.ok) {
+          const data = await response.json()
+          setProjectCount(data.count || 0)
+        }
+      } catch (error) {
+        console.error('Error fetching project count:', error)
+      }
+    }
+
+    if (user) {
+      fetchProjectCount()
+    }
+  }, [user])
+
   async function handleSignOut() {
     try {
       await fetch('/api/auth/session', { method: 'DELETE' })
@@ -54,6 +74,12 @@ export default function AdminPage() {
   }
 
   async function handleRebuildProfile() {
+    if (projectCount < 3) {
+      setProfileBuildState('error')
+      setProfileBuildResult('You need at least 3 projects before generating a profile')
+      return
+    }
+
     setProfileBuildState('building')
     setProfileBuildResult(null)
 
@@ -97,6 +123,10 @@ export default function AdminPage() {
                 {user.name || user.email}
               </p>
             )}
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+              {projectCount} {projectCount === 1 ? 'project' : 'projects'}
+              {projectCount < 3 && ` • Need ${3 - projectCount} more for profile generation`}
+            </p>
           </div>
           <button
             onClick={handleSignOut}
@@ -139,7 +169,7 @@ export default function AdminPage() {
         <div className="mt-4">
           <button
             onClick={handleRebuildProfile}
-            disabled={profileBuildState === 'building'}
+            disabled={profileBuildState === 'building' || projectCount < 3}
             className="w-full p-6 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center justify-between">
@@ -149,7 +179,9 @@ export default function AdminPage() {
                   {profileBuildState === 'building' ? 'Analysing...' : 'Rebuild Profile'}
                 </h2>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                  Re-analyse projects and update AI-derived capabilities
+                  {projectCount < 3 
+                    ? `Add ${3 - projectCount} more ${projectCount === 2 ? 'project' : 'projects'} to unlock profile generation`
+                    : 'Re-analyse projects and update AI-derived capabilities'}
                 </p>
               </div>
               {profileBuildState === 'success' && (

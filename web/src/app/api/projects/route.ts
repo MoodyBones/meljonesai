@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/firebase/admin'
 
 const SANITY_PROJECT_ID = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID
 const SANITY_DATASET = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production'
@@ -19,6 +20,66 @@ type ProjectInput = {
   url?: string
 }
 
+export async function GET(request: Request) {
+  // Verify session
+  const cookieStore = await cookies()
+  const session = cookieStore.get('mj_session')
+
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Get current user from session
+  const currentUser = await getCurrentUser(session.value)
+  if (!currentUser?.uid) {
+    return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
+  }
+
+  // Check Sanity config
+  if (!SANITY_PROJECT_ID || !SANITY_TOKEN) {
+    return NextResponse.json({ error: 'Sanity not configured' }, { status: 500 })
+  }
+
+  try {
+    // Query projects for current user
+    const query = `*[_type == "project" && userId == $userId] | order(_createdAt desc)`
+    const sanityUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=${encodeURIComponent(query)}`
+
+    const response = await fetch(sanityUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${SANITY_TOKEN}`,
+      },
+      body: JSON.stringify({
+        params: { userId: currentUser.uid },
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Sanity query error:', errorData)
+      return NextResponse.json(
+        { error: 'Failed to fetch projects from Sanity' },
+        { status: 500 }
+      )
+    }
+
+    const result = await response.json()
+
+    return NextResponse.json({
+      projects: result.result || [],
+      count: result.result?.length || 0,
+    })
+  } catch (error) {
+    console.error('Error fetching projects:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(request: Request) {
   // Verify session
   const cookieStore = await cookies()
@@ -26,6 +87,12 @@ export async function POST(request: Request) {
 
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Get current user from session
+  const currentUser = await getCurrentUser(session.value)
+  if (!currentUser?.uid) {
+    return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
   }
 
   // Check Sanity config
@@ -47,6 +114,7 @@ export async function POST(request: Request) {
     // Build Sanity document
     const document: Record<string, unknown> = {
       _type: 'project',
+      userId: currentUser.uid,
       projectId: body.projectId,
       name: body.name,
     }
