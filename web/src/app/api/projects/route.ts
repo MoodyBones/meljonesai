@@ -58,10 +58,17 @@ export async function GET(_request: Request) {
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Sanity query error:', errorData)
+      let errorMessage = 'Failed to fetch projects from Sanity'
+      try {
+        const errorData = await response.json()
+        console.error('Sanity query error:', errorData)
+        errorMessage = errorData.error || errorData.message || errorMessage
+      } catch {
+        // Response is not JSON, use default message
+        console.error('Sanity query error: non-JSON response', response.status)
+      }
       return NextResponse.json(
-        { error: 'Failed to fetch projects from Sanity' },
+        { error: errorMessage },
         { status: 500 }
       )
     }
@@ -146,10 +153,17 @@ export async function POST(request: Request) {
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Sanity error:', errorData)
+      let errorMessage = 'Failed to create project in Sanity'
+      try {
+        const errorData = await response.json()
+        console.error('Sanity error:', errorData)
+        errorMessage = errorData.error || errorData.message || errorMessage
+      } catch {
+        // Response is not JSON, use default message
+        console.error('Sanity error: non-JSON response', response.status)
+      }
       return NextResponse.json(
-        { error: 'Failed to create project in Sanity' },
+        { error: errorMessage },
         { status: 500 }
       )
     }

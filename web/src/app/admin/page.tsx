@@ -20,6 +20,7 @@ export default function AdminPage() {
   const [profileBuildState, setProfileBuildState] = useState<ProfileBuildState>('idle')
   const [profileBuildResult, setProfileBuildResult] = useState<string | null>(null)
   const [projectCount, setProjectCount] = useState<number>(0)
+  const [projectCountError, setProjectCountError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!auth) {
@@ -52,9 +53,14 @@ export default function AdminPage() {
         if (response.ok) {
           const data = await response.json()
           setProjectCount(data.count || 0)
+          setProjectCountError(null)
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          setProjectCountError(errorData.error || 'Failed to load project count')
         }
       } catch (error) {
         console.error('Error fetching project count:', error)
+        setProjectCountError('Failed to load project count')
       }
     }
 
@@ -85,9 +91,22 @@ export default function AdminPage() {
 
     try {
       // Get current user's ID token to pass to webhook
-      // TODO: n8n webhook needs to be updated to accept userId parameter and filter projects by user
-      const idToken = auth ? await auth.currentUser?.getIdToken() : null
+      if (!auth?.currentUser) {
+        throw new Error('Not authenticated. Please sign in again.')
+      }
       
+      let idToken: string | null = null
+      try {
+        idToken = await auth.currentUser.getIdToken()
+      } catch {
+        throw new Error('Failed to get authentication token. Please sign in again.')
+      }
+
+      if (!idToken) {
+        throw new Error('Authentication token is missing. Please sign in again.')
+      }
+      
+      // TODO: n8n webhook needs to be updated to accept userId parameter and filter projects by user
       const response = await fetch('https://n8n.goodsomeday.com/webhook/build-profile', {
         method: 'POST',
         headers: {
@@ -133,10 +152,16 @@ export default function AdminPage() {
                 {user.name || user.email}
               </p>
             )}
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-              {projectCount} {projectCount === 1 ? 'project' : 'projects'}
-              {projectCount < 3 && ` • Need ${3 - projectCount} more for profile generation`}
-            </p>
+            {projectCountError ? (
+              <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                {projectCountError}
+              </p>
+            ) : (
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+                {projectCount} {projectCount === 1 ? 'project' : 'projects'}
+                {projectCount < 3 && ` • Need ${3 - projectCount} more for profile generation`}
+              </p>
+            )}
           </div>
           <button
             onClick={handleSignOut}
