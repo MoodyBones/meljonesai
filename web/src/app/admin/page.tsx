@@ -13,6 +13,11 @@ type AdminUser = {
 
 type ProfileBuildState = 'idle' | 'building' | 'success' | 'error'
 
+type Stats = {
+  regenerations: { used: number; remaining: number; limit: number }
+  betaUsers: { current: number; max: number }
+}
+
 export default function AdminPage() {
   const router = useRouter()
   const [user, setUser] = useState<AdminUser | null>(null)
@@ -21,6 +26,8 @@ export default function AdminPage() {
   const [profileBuildResult, setProfileBuildResult] = useState<string | null>(null)
   const [projectCount, setProjectCount] = useState<number>(0)
   const [projectCountError, setProjectCountError] = useState<string | null>(null)
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [statsError, setStatsError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!auth) {
@@ -36,7 +43,7 @@ export default function AdminPage() {
       } else {
         setUser({
           email: firebaseUser.email,
-          name: firebaseUser.displayName
+          name: firebaseUser.displayName,
         })
       }
       setIsLoading(false)
@@ -69,6 +76,29 @@ export default function AdminPage() {
     }
   }, [user])
 
+  // Fetch stats when user is set
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const response = await fetch('/api/stats')
+        if (response.ok) {
+          const data = await response.json()
+          setStats(data)
+          setStatsError(null)
+        } else {
+          setStatsError('Failed to load stats')
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error)
+        setStatsError('Failed to load stats')
+      }
+    }
+
+    if (user) {
+      fetchStats()
+    }
+  }, [user])
+
   async function handleSignOut() {
     try {
       await fetch('/api/auth/session', { method: 'DELETE' })
@@ -86,6 +116,13 @@ export default function AdminPage() {
       return
     }
 
+    // Check rate limit
+    if (stats && stats.regenerations.remaining <= 0) {
+      setProfileBuildState('error')
+      setProfileBuildResult('Daily regeneration limit reached. Try again tomorrow.')
+      return
+    }
+
     setProfileBuildState('building')
     setProfileBuildResult(null)
 
@@ -94,7 +131,7 @@ export default function AdminPage() {
       if (!auth?.currentUser) {
         throw new Error('Not authenticated. Please sign in again.')
       }
-      
+
       let idToken: string | null = null
       try {
         idToken = await auth.currentUser.getIdToken()
@@ -105,8 +142,41 @@ export default function AdminPage() {
       if (!idToken) {
         throw new Error('Authentication token is missing. Please sign in again.')
       }
-      
-      // TODO: n8n webhook needs to be updated to accept userId parameter and filter projects by user
+
+      // First, call the regenerate endpoint to check and increment rate limit
+      const regenRes = await fetch('/api/regenerate', {
+        method: 'POST',
+      })
+
+      if (!regenRes.ok) {
+        const regenData = await regenRes.json().catch(() => ({}))
+        if (regenData.rateLimited) {
+          // Update stats to reflect the rate limit
+          if (stats) {
+            setStats({
+              ...stats,
+              regenerations: { ...stats.regenerations, remaining: 0 },
+            })
+          }
+          throw new Error(regenData.error || 'Rate limit exceeded')
+        }
+        throw new Error(regenData.error || 'Failed to track regeneration')
+      }
+
+      // Update stats after successful increment
+      const regenData = await regenRes.json()
+      if (stats && regenData.count !== undefined) {
+        setStats({
+          ...stats,
+          regenerations: {
+            ...stats.regenerations,
+            used: regenData.count,
+            remaining: stats.regenerations.limit - regenData.count,
+          },
+        })
+      }
+
+      // Now call the n8n webhook
       const response = await fetch('https://n8n.goodsomeday.com/webhook/build-profile', {
         method: 'POST',
         headers: {
@@ -130,6 +200,8 @@ export default function AdminPage() {
     }
   }
 
+  const isRateLimited = stats ? stats.regenerations.remaining <= 0 : false
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center">
@@ -144,18 +216,14 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-              Dashboard
-            </h1>
+            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Dashboard</h1>
             {user && (
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                 {user.name || user.email}
               </p>
             )}
             {projectCountError ? (
-              <p className="text-xs text-red-500 dark:text-red-400 mt-1">
-                {projectCountError}
-              </p>
+              <p className="text-xs text-red-500 dark:text-red-400 mt-1">{projectCountError}</p>
             ) : (
               <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
                 {projectCount} {projectCount === 1 ? 'project' : 'projects'}
@@ -170,6 +238,31 @@ export default function AdminPage() {
             Sign Out
           </button>
         </div>
+
+        {/* Stats Bar */}
+        {stats && !statsError && (
+          <div className="mb-6 flex gap-4 text-sm">
+            <div className="bg-white dark:bg-zinc-800 rounded-lg px-4 py-2 border border-zinc-200 dark:border-zinc-700">
+              <span className="text-zinc-500 dark:text-zinc-400">Regenerations: </span>
+              <span
+                className={
+                  isRateLimited
+                    ? 'text-red-600 dark:text-red-400 font-medium'
+                    : 'text-zinc-900 dark:text-zinc-100 font-medium'
+                }
+              >
+                {stats.regenerations.used}/{stats.regenerations.limit}
+              </span>
+              <span className="text-zinc-400 dark:text-zinc-500"> today</span>
+            </div>
+            <div className="bg-white dark:bg-zinc-800 rounded-lg px-4 py-2 border border-zinc-200 dark:border-zinc-700">
+              <span className="text-zinc-500 dark:text-zinc-400">Beta users: </span>
+              <span className="text-zinc-900 dark:text-zinc-100 font-medium">
+                {stats.betaUsers.current}/{stats.betaUsers.max}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Navigation Cards */}
         <div className="grid gap-4 sm:grid-cols-2">
@@ -191,9 +284,7 @@ export default function AdminPage() {
             className="block p-6 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors"
           >
             <div className="text-2xl mb-2">🛠️</div>
-            <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
-              New Project
-            </h2>
+            <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">New Project</h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
               Add a new project to your portfolio evidence
             </p>
@@ -204,7 +295,7 @@ export default function AdminPage() {
         <div className="mt-4">
           <button
             onClick={handleRebuildProfile}
-            disabled={profileBuildState === 'building' || projectCount < 3}
+            disabled={profileBuildState === 'building' || projectCount < 3 || isRateLimited}
             className="w-full p-6 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center justify-between">
@@ -214,9 +305,11 @@ export default function AdminPage() {
                   {profileBuildState === 'building' ? 'Analysing...' : 'Rebuild Profile'}
                 </h2>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                  {projectCount < 3 
-                    ? `Add ${3 - projectCount} more ${projectCount === 2 ? 'project' : 'projects'} to unlock profile generation`
-                    : 'Re-analyse projects and update AI-derived capabilities'}
+                  {isRateLimited
+                    ? 'Daily limit reached. Try again tomorrow.'
+                    : projectCount < 3
+                      ? `Add ${3 - projectCount} more ${projectCount === 2 ? 'project' : 'projects'} to unlock profile generation`
+                      : 'Re-analyse projects and update AI-derived capabilities'}
                 </p>
               </div>
               {profileBuildState === 'success' && (
@@ -225,9 +318,7 @@ export default function AdminPage() {
                 </span>
               )}
               {profileBuildState === 'error' && (
-                <span className="text-red-600 dark:text-red-400 text-sm">
-                  {profileBuildResult}
-                </span>
+                <span className="text-red-600 dark:text-red-400 text-sm">{profileBuildResult}</span>
               )}
             </div>
           </button>
