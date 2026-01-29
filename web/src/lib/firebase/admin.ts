@@ -15,6 +15,7 @@ function initializeAdminIfNeeded() {
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey,
     }),
+    databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com`,
   })
 
   return admin
