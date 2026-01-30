@@ -1,10 +1,25 @@
 import admin from 'firebase-admin'
-import './admin' // Ensure admin is initialized
 
 const MAX_BETA_USERS = 10
 const MAX_DAILY_REGENERATIONS = 5
 
 function getDatabase() {
+  // Ensure Firebase Admin is initialized before accessing database
+  if (admin.apps.length === 0) {
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY
+      ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+      : undefined
+
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey,
+      }),
+      databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com`,
+    })
+  }
+  
   return admin.database()
 }
 
@@ -93,6 +108,7 @@ export async function isUserBetaRegistered(userId: string): Promise<boolean> {
 /**
  * Register a user as a beta user
  * Returns success status and any error message
+ * Uses a transaction to atomically check and increment invite code usage
  */
 export async function registerBetaUser(
   userId: string,
@@ -114,26 +130,40 @@ export async function registerBetaUser(
       return { success: false, error: 'Beta is currently full. Please try again later.' }
     }
 
-    // Validate invite code
-    const validation = await validateInviteCode(inviteCode)
-    if (!validation.valid) {
-      return { success: false, error: validation.error }
+    // Atomically validate and increment invite code usage
+    const inviteRef = db.ref(`inviteCodes/${inviteCode}`)
+    const inviteTxnResult = await inviteRef.transaction((currentInvite: InviteCode | null) => {
+      if (!currentInvite || !currentInvite.active) {
+        // Abort transaction: invalid or inactive invite
+        return
+      }
+
+      const { maxUses, currentUses } = currentInvite
+      const uses = typeof currentUses === 'number' ? currentUses : 0
+
+      if (uses >= maxUses) {
+        // Abort transaction: invite has reached max uses
+        return
+      }
+
+      return {
+        ...currentInvite,
+        currentUses: uses + 1,
+      }
+    })
+
+    if (!inviteTxnResult.committed || !inviteTxnResult.snapshot.exists()) {
+      return { success: false, error: 'Invalid or expired invite code.' }
     }
 
-    // Register user and increment invite code usage in a transaction
+    // Register user after successful invite usage increment
     const betaUser: BetaUser = {
       email,
       inviteCode,
       joinedAt: new Date().toISOString(),
     }
 
-    // Write beta user
     await db.ref(`betaUsers/${userId}`).set(betaUser)
-
-    // Increment invite code usage
-    await db.ref(`inviteCodes/${inviteCode}/currentUses`).transaction((currentUses) => {
-      return (currentUses || 0) + 1
-    })
 
     return { success: true }
   } catch (error) {
@@ -151,15 +181,11 @@ function getTodayKey(): string {
 
 /**
  * Check if user can regenerate (under daily limit)
+ * Throws error if database operation fails
  */
 export async function canRegenerate(userId: string): Promise<boolean> {
-  try {
-    const status = await getRateLimitStatus(userId)
-    return status.remaining > 0
-  } catch (error) {
-    console.error('Error checking regeneration limit:', error)
-    return false
-  }
+  const status = await getRateLimitStatus(userId)
+  return status.remaining > 0
 }
 
 /**

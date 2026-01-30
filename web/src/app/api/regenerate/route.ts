@@ -21,8 +21,18 @@ export async function POST(req: NextRequest) {
 
     const userId = decodedClaims.uid
 
-    // Check if user can regenerate
-    const allowed = await canRegenerate(userId)
+    // Check if user can regenerate (throws on database errors)
+    let allowed: boolean
+    try {
+      allowed = await canRegenerate(userId)
+    } catch (error) {
+      console.error('Database error checking regeneration limit:', error)
+      return NextResponse.json(
+        { error: 'Failed to check rate limit. Please try again.' },
+        { status: 500 }
+      )
+    }
+
     if (!allowed) {
       return NextResponse.json(
         {
@@ -37,12 +47,20 @@ export async function POST(req: NextRequest) {
     const result = await incrementRegeneration(userId)
 
     if (!result.success) {
+      // Check if this is a rate limit error or a server error
+      if (result.error?.includes('limit reached')) {
+        return NextResponse.json(
+          {
+            error: result.error,
+            rateLimited: true,
+          },
+          { status: 429 }
+        )
+      }
+      // Database/server error
       return NextResponse.json(
-        {
-          error: result.error || 'Failed to track regeneration',
-          rateLimited: true,
-        },
-        { status: 429 }
+        { error: result.error || 'Failed to track regeneration' },
+        { status: 500 }
       )
     }
 

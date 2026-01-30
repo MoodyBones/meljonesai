@@ -19,7 +19,9 @@ export default function LandingContent({ inviteStatus, isLoggedIn }: LandingCont
   // Set cookie when invite is valid
   useEffect(() => {
     if (inviteStatus.valid && inviteStatus.code) {
-      document.cookie = `validInvite=${inviteStatus.code}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+      const encodedCode = encodeURIComponent(inviteStatus.code)
+      const secureFlag = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : ''
+      document.cookie = `validInvite=${encodedCode}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax${secureFlag}`
     }
   }, [inviteStatus])
 

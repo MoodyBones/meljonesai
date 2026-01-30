@@ -217,7 +217,8 @@ Existing Sanity documents need `userId` field added:
 - ✅ No client-side userId manipulation
 
 ### Remaining Considerations
-- Rate limiting not implemented (could add later)
+- Basic rate limiting implemented for profile regeneration (5 per day per user via Firebase Realtime Database)
+- No global IP-based or cross-endpoint rate limiting yet (consider for production)
 - No audit logging (consider for production)
 - Session expiration handled by Firebase (7 days)
 
