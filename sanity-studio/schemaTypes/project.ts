@@ -6,6 +6,14 @@ export default defineType({
   type: 'document',
   fields: [
     defineField({
+      name: 'userId',
+      title: 'User ID',
+      type: 'string',
+      description: 'Firebase UID of the project owner. Enables multi-user support.',
+      validation: (Rule) => Rule.required(),
+      hidden: true,
+    }),
+    defineField({
       name: 'projectId',
       title: 'Project ID',
       type: 'string',

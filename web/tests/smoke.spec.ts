@@ -1,10 +1,11 @@
 import {test, expect} from '@playwright/test'
 
-test('home page redirects to login or admin', async ({page}) => {
+test('home page shows landing page', async ({page}) => {
   const response = await page.goto('/')
-  // Home should redirect to /login (unauthenticated) or /admin (authenticated)
-  expect(page.url()).toMatch(/\/(login|admin)/)
+  // Home should show landing page (no longer redirects)
   expect(response?.status()).toBeLessThan(500)
+  // Landing page should have the app name
+  await expect(page.locator('h1')).toContainText('Steep')
 })
 
 test('login page loads without server error', async ({page}) => {
