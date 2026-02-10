@@ -15,6 +15,7 @@ function initializeAdminIfNeeded() {
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey,
     }),
+    databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com`,
   })
 
   return admin
@@ -26,6 +27,21 @@ function getAdminAuth() {
 
 export async function verifyIdToken(idToken: string) {
   return getAdminAuth().verifyIdToken(idToken)
+}
+
+// Get current user from session cookie
+export async function getCurrentUser(sessionCookie: string) {
+  try {
+    const decodedClaims = await verifySessionCookie(sessionCookie)
+    return {
+      uid: decodedClaims.uid,
+      email: decodedClaims.email || null,
+      name: decodedClaims.name || null,
+    }
+  } catch (error) {
+    console.error('Failed to verify session cookie:', error)
+    return null
+  }
 }
 
 // Create a session cookie (server-side) from an ID token. ExpiresIn is in milliseconds.

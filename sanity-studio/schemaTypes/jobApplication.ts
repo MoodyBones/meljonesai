@@ -12,6 +12,16 @@ export default defineType({
     {name: 'meta', title: 'Metadata'},
   ],
   fields: [
+    // === USER OWNERSHIP ===
+    defineField({
+      name: 'userId',
+      title: 'User ID',
+      type: 'string',
+      group: 'meta',
+      description: 'Firebase UID of the application owner. Enables multi-user support.',
+      validation: (Rule) => Rule.required(),
+      hidden: true,
+    }),
     // === TARGET ROLE ===
     defineField({
       name: 'slug',

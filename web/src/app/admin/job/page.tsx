@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { auth } from '@/lib/firebase/config'
 
 type FormState = 'idle' | 'submitting' | 'success' | 'rejected' | 'error'
 
@@ -43,14 +44,33 @@ export default function JobInputPage() {
     setError(null)
 
     const formData = new FormData(e.currentTarget)
-    const payload = {
-      companyName: formData.get('companyName') as string,
-      roleTitle: formData.get('roleTitle') as string,
-      jobUrl: formData.get('jobUrl') as string || undefined,
-      jobDescription: formData.get('jobDescription') as string,
-    }
-
+    
     try {
+      // Get current user's ID token to pass to webhook
+      if (!auth?.currentUser) {
+        throw new Error('Not authenticated. Please sign in again.')
+      }
+      
+      let idToken: string | null = null
+      try {
+        idToken = await auth.currentUser.getIdToken()
+      } catch {
+        throw new Error('Failed to get authentication token. Please sign in again.')
+      }
+
+      if (!idToken) {
+        throw new Error('Authentication token is missing. Please sign in again.')
+      }
+      
+      // TODO: n8n webhook needs to be updated to accept idToken and filter profile/projects by user
+      const payload = {
+        companyName: formData.get('companyName') as string,
+        roleTitle: formData.get('roleTitle') as string,
+        jobUrl: formData.get('jobUrl') as string || undefined,
+        jobDescription: formData.get('jobDescription') as string,
+        idToken, // n8n can verify this token and extract userId for filtering
+      }
+
       const response = await fetch('https://n8n.goodsomeday.com/webhook/match-job', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
